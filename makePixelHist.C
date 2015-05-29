@@ -40,11 +40,20 @@ int makePixelHist(const std::string inName)
   const Int_t maxFedId = 39;
   const Int_t maxLink = 36;
   TH1F* nHitsPerFed_h[maxFedId];
+  TH1F* meanHitsPerFed_h;
   TH1F* nHitsPerLink_h[maxFedId][maxLink];
+  TH1F* meanHitsPerLink_h[maxFedId];
+
+  meanHitsPerFed_h = new TH1F(Form("meanHitsPerFed_h"), Form(";fedid;<nHits>"), maxFedId, 0.5, 39.5);
+  meanHitsPerFed_h->GetXaxis()->CenterTitle();
 
   for(Int_t iter = 0; iter < maxFedId; iter++){
     nHitsPerFed_h[iter] = new TH1F(Form("nHitsPerFed_fed%d_h", iter+1), Form(";nHits_{fed%d};Events", iter+1), 20, 0.001, 7999.999);
     nHitsPerFed_h[iter]->GetXaxis()->CenterTitle();
+
+    meanHitsPerLink_h[iter] = new TH1F(Form("meanHitsPerLink_fed%d_h", iter+1), Form(";linkn_{fed%d};<nHits>",iter+1), maxLink, 0.5, 36.5);
+    meanHitsPerLink_h[iter]->GetXaxis()->CenterTitle();
+
 
     for(Int_t iter2 = 0; iter2 < maxLink; iter2++){
       nHitsPerLink_h[iter][iter2] = new TH1F(Form("nHitsPerLink_fed%d_link%d_h", iter+1, iter2+1), Form(";nHits_{fed%d,link%d};Events", iter+1, iter2+1), 20, 0.001, 399.999);
@@ -97,16 +106,31 @@ int makePixelHist(const std::string inName)
   }    
 
   for(Int_t iter = 0; iter < maxFedId; iter++){
+    outFile_p->cd();
     TDirectory* tempDir_p = outFile_p->mkdir(Form("fed%d", iter+1));
     tempDir_p->cd();
+
+    meanHitsPerFed_h->SetBinContent(iter+1, nHitsPerFed_h[iter]->GetMean());
+    meanHitsPerFed_h->SetBinError(iter+1, nHitsPerFed_h[iter]->GetMeanError());
+
     nHitsPerFed_h[iter]->Write("", TObject::kOverwrite);
     for(Int_t iter2 = 0; iter2 < maxLink; iter2++){
+      meanHitsPerLink_h[iter]->SetBinContent(iter2+1, nHitsPerLink_h[iter][iter2]->GetMean());
+      meanHitsPerLink_h[iter]->SetBinError(iter2+1, nHitsPerLink_h[iter][iter2]->GetMeanError());
+
       nHitsPerLink_h[iter][iter2]->Write("", TObject::kOverwrite);
     }
+    meanHitsPerLink_h[iter]->Write("", TObject::kOverwrite);
   }
-  
+
+  outFile_p->cd();
+  meanHitsPerFed_h->Write("", TObject::kOverwrite);
+
+  delete meanHitsPerFed_h;
+
   for(Int_t iter = 0; iter < maxFedId; iter++){
     delete nHitsPerFed_h[iter];
+    delete meanHitsPerLink_h[iter];
     for(Int_t iter2 = 0; iter2 < maxLink; iter2++){
       delete nHitsPerLink_h[iter][iter2];
     }

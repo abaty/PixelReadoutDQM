@@ -20,6 +20,7 @@ void claverCanvasSaving(TCanvas* c, TString s,TString format="gif"){
 
 int makePixelPlot(const std::string inName)
 {
+  gStyle->SetOptStat(0);
   
   std::string outName = inName;
   const std::string cutString = "_HIST.root";
@@ -34,9 +35,15 @@ int makePixelPlot(const std::string inName)
   const Int_t maxFedId = 39;
   const Int_t maxLink = 36;
   TCanvas* fedCanv_p[maxFedId];
+  TCanvas* meanFedCanv_p;
   TCanvas* linkCanv_p[maxFedId];
+  TCanvas* meanLinkCanv_p[maxFedId];
+
   TH1F* nHitsPerFed_h[maxFedId];
+  TH1F* meanHitsPerFed_h;
   TH1F* nHitsPerLink_h[maxFedId][maxLink];
+  TH1F* meanHitsPerLink_h[maxFedId];
+
   Float_t maxPerFed[maxFedId];
   Float_t minPerFed[maxFedId];
 
@@ -45,10 +52,19 @@ int makePixelPlot(const std::string inName)
     minPerFed[iter] = 1000000;
   }
 
+  meanFedCanv_p = new TCanvas(Form("meanHitsPerFed_c"), Form("meanHitsPerFed_c"), 700, 700);
+  meanHitsPerFed_h = (TH1F*)inFile_p->Get(Form("meanHitsPerFed_h"));
+  meanHitsPerFed_h->DrawCopy("E1");
+
   for(Int_t iter = 0; iter < maxFedId; iter++){
     fedCanv_p[iter] = new TCanvas(Form("nHitsPerFed_fed%d_c", iter+1), Form("nHitsPerFed_fed%d_c", iter+1), 700, 700);
     nHitsPerFed_h[iter] = (TH1F*)inFile_p->Get(Form("fed%d/nHitsPerFed_fed%d_h", iter+1, iter+1));
     nHitsPerFed_h[iter]->DrawCopy("E1");
+
+    meanLinkCanv_p[iter] = new TCanvas(Form("meanHitsPerLink_fed%d_c", iter+1), Form("meanHitsPerLink_fed%d_c", iter+1), 700, 700);
+    meanHitsPerLink_h[iter] = (TH1F*)inFile_p->Get(Form("fed%d/meanHitsPerLink_fed%d_h", iter+1, iter+1));
+    meanHitsPerLink_h[iter]->DrawCopy("E1");
+
 
     linkCanv_p[iter] = new TCanvas(Form("nHitsPerLink_fed%d_c", iter+1), Form("nHitsPerLink_fed%d_c", iter+1), 700, 700);
     linkCanv_p[iter]->Divide(9, 4, 0.0, 0.0);
@@ -77,7 +93,6 @@ int makePixelPlot(const std::string inName)
       linkCanv_p[iter]->cd(iter2+1);
       nHitsPerLink_h[iter][iter2]->SetMaximum(maxPerFed[iter]);
       nHitsPerLink_h[iter][iter2]->SetMinimum(minPerFed[iter]);
-      gStyle->SetStatY(.7);
       nHitsPerLink_h[iter][iter2]->DrawCopy("E1");
 
       if(iter2 == 0) temp->DrawLatex(.15, .8, Form("fedId == %d", iter+1)); 
@@ -87,9 +102,15 @@ int makePixelPlot(const std::string inName)
 
 
   TFile* outFile_p = new TFile(outName.c_str(), "RECREATE");
+  meanFedCanv_p->Write("", TObject::kOverwrite);
+  claverCanvasSaving(meanFedCanv_p, Form("pdfDir/meanHitsPerFed"), "pdf");
+
   for(Int_t iter = 0; iter < maxFedId; iter++){
     fedCanv_p[iter]->Write("", TObject::kOverwrite);
     claverCanvasSaving(fedCanv_p[iter], Form("pdfDir/nHitsPerFed_fed%d", iter+1), "pdf");
+
+    meanLinkCanv_p[iter]->Write("", TObject::kOverwrite);
+    claverCanvasSaving(meanLinkCanv_p[iter], Form("pdfDir/meanHitsPerLink_fed%d", iter+1), "pdf");
 
     linkCanv_p[iter]->Write("", TObject::kOverwrite);
     claverCanvasSaving(linkCanv_p[iter], Form("pdfDir/nHitsPerLink_fed%d", iter+1), "pdf");
@@ -97,8 +118,10 @@ int makePixelPlot(const std::string inName)
   outFile_p->Close();
   delete outFile_p;
 
+  delete meanFedCanv_p;
   for(Int_t iter = 0; iter < maxFedId; iter++){
     delete fedCanv_p[iter];
+    delete meanLinkCanv_p[iter];
     delete linkCanv_p[iter];
   }
 
