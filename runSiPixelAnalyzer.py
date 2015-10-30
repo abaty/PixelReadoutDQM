@@ -7,12 +7,14 @@ process.load("FWCore.MessageService.MessageLogger_cfi")
 process.load('Configuration.StandardSequences.RawToDigi_cff')
 process.load('EventFilter.SiPixelRawToDigi.SiPixelRawToDigi_cfi')
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(50) )
+#process.load('Geometry.TrackerGeometryBuilder.customTrackerParametersRun2.py')
+
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1) )
 
 process.source = cms.Source("PoolSource",
                                 # replace 'myfile.root' with the source file you want to use
                                 fileNames = cms.untracked.vstring(
-            'file:/mnt/hadoop/cms/store/user/cmcginn/hltJet/HI/20150520_502MB_RAWSkim/rawSkim_L1Cent05_144_1_IQr.root'
+            '/store/relval/CMSSW_7_4_10_patch2/SingleMuon/RAW/74X_dataRun2_HLT_frozen_v1_resub_RelVal_singleMuon2015C-v1/00000/1072FBB8-4D53-E511-A496-00261894397E.root'
                 )
                             )
 
@@ -21,9 +23,18 @@ process.TFileService = cms.Service("TFileService",
       closeFileFast = cms.untracked.bool(True)
   )
 
+#added--------------------------------
 
-process.GlobalTag = cms.ESSource( "PoolDBESSource",
-    globaltag = cms.string( "GR_H_V39" ),
+
+
+#added-------------------------------
+
+
+process.GlobalTag = cms.ESSource( "PoolDBESSource",    
+#     globaltag = cms.string( "74X_dataRun2_HLT_frozen_v1" ),
+    globaltag = cms.string( "75X_mcRun2_asymptotic_v6" ),
+
+
     RefreshEachRun = cms.untracked.bool( True ),
     RefreshOpenIOVs = cms.untracked.bool( False ),
     toGet = cms.VPSet(
@@ -51,7 +62,8 @@ process.GlobalTag = cms.ESSource( "PoolDBESSource",
 
 if 'GlobalTag' in process.__dict__:
     from Configuration.AlCa.GlobalTag_condDBv2 import GlobalTag as customiseGlobalTag
-    process.GlobalTag = customiseGlobalTag(process.GlobalTag, globaltag = 'MCHI2_74_V3')
+    process.GlobalTag = customiseGlobalTag(process.GlobalTag, globaltag = '75X_mcRun2_asymptotic_v6')
+#    process.GlobalTag = customiseGlobalTag(process.GlobalTag, globaltag = '74X_dataRun2_HLT_frozen_v1')
     process.GlobalTag.connect   = 'frontier://FrontierProd/CMS_CONDITIONS'
     process.GlobalTag.pfnPrefix = cms.untracked.string('frontier://FrontierProd/')
     for pset in process.GlobalTag.toGet.value():
@@ -65,15 +77,16 @@ if 'GlobalTag' in process.__dict__:
 process.TrackerDigiGeometryESModule = cms.ESProducer( "TrackerDigiGeometryESModule",
   appendToDataLabel = cms.string( "" ),
   fromDDD = cms.bool( False ),
-  trackerGeometryConstants = cms.PSet(
-    ROCS_X = cms.int32( 0 ),
-    ROCS_Y = cms.int32( 0 ),
-    upgradeGeometry = cms.bool( False ),
-    BIG_PIX_PER_ROC_Y = cms.int32( 2 ),
-    BIG_PIX_PER_ROC_X = cms.int32( 1 ),
-    ROWS_PER_ROC = cms.int32( 80 ),
-    COLS_PER_ROC = cms.int32( 52 )
-  ),
+  #trackerGeometryConstants = cms.PSet(
+  #  ROCS_X = cms.int32( 0 ),
+  #  ROCS_Y = cms.int32( 0 ),
+  #  upgradeGeometry = cms.bool( False ),
+  #  BIG_PIX_PER_ROC_Y = cms.int32( 2 ),
+  #  BIG_PIX_PER_ROC_X = cms.int32( 1 ),
+  #  ROWS_PER_ROC = cms.int32( 80 ),
+  #  COLS_PER_ROC = cms.int32( 52 )
+  #),
+  #removed for 7_5_3_patch1 running
   applyAlignment = cms.bool( True ),
   alignmentsLabel = cms.string( "" )
 )
