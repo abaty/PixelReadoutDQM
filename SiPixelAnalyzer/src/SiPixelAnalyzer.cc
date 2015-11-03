@@ -48,6 +48,8 @@
 #include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 #include "DataFormats/TrackerRecHit2D/interface/SiPixelRecHitCollection.h"
 
+#include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
+
 #include "CondFormats/SiPixelObjects/interface/SiPixelFedCablingMap.h"
 #include "CondFormats/SiPixelObjects/interface/SiPixelFedCablingTree.h"
 #include "CondFormats/DataRecord/interface/SiPixelFedCablingMapRcd.h"
@@ -87,6 +89,9 @@ class SiPixelAnalyzer : public edm::EDAnalyzer {
   // ----------member data ---------------------------
   std::string outputFile_;
   edm::InputTag src_;
+
+  edm::EDGetTokenT<HFRecHitCollection> srcHFhits_;
+
   unsigned int BarrelColumnsOffset_;
   unsigned int gnHModuleBarrel_;
   unsigned int EndcapColumnsOffset_;
@@ -134,6 +139,8 @@ SiPixelAnalyzer::SiPixelAnalyzer(const edm::ParameterSet& iConfig)
    //now do what ever initialization is needed 
    outputFile_ = iConfig.getUntrackedParameter<string>("outputFile", "pixeldigihisto.root");
    src_ =  iConfig.getParameter<edm::InputTag>( "src" );
+   
+   srcHFhits_ = consumes<HFRecHitCollection>(iConfig.getParameter<edm::InputTag>("srcHFhits"));
 
     
      oFile_ = new TFile((const char*)outputFile_.c_str(), "RECREATE");
@@ -200,6 +207,17 @@ SiPixelAnalyzer::~SiPixelAnalyzer()
 void
 SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
+   //centrality first
+   double HFRecHitSum = 0;
+   Handle<HFRecHitCollection> hits;
+   iEvent.getByToken(srcHFhits_,hits);
+   for( size_t ihit = 0; ihit<hits->size(); ++ ihit){
+     const HFRecHit & rechit = (*hits)[ ihit ];
+     HFRecHitSum += rechit.energy();
+   }
+   std::cout << HFRecHitSum << std::endl;
+
+
    using namespace sipixelobjects;
 
    gnHModuleBarrel_=0;
@@ -231,7 +249,7 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    
    for (FEDiter FI  = cabling.begin(); FI != cabling.end(); FI++) { //looping over FED
         uint32_t FEDid = (**FI).id();
-        //
+        if(FEDid!=0) continue;
         //FED ID above
         // 
         SiPixelFrameConverter converter(theCablingMap, FEDid);
@@ -255,8 +273,9 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
                  for ( iter = begin ; iter != end; iter++ ){  //llop over digi
                      DetectorIndex detector = {id, (*iter).row(), (*iter).column()};
                      int status   = converter.toCabling(cabling, detector);
-                     if(status==0) if (idxLink == cabling.link) ++hitsperlink;
+                     if(status==0) if (idxLink == cabling.link){ ++hitsperlink; std::cout << hitsperlink<<std::endl;}
                  }
+              std::cout << (double) (hitsperlink) << std::endl;
               LinkOcc_->Fill(FEDid*36+idxLink,(double)(hitsperlink));
 	    }
 	    LinksNt_->Fill(FEDid,idxLink,hitsperlink);

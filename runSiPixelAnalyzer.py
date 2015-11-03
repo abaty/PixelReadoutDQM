@@ -15,8 +15,9 @@ process.source = cms.Source("PoolSource",
                                 # replace 'myfile.root' with the source file you want to use
                                 fileNames = cms.untracked.vstring(
             #'/store/relval/CMSSW_7_4_10_patch2/SingleMuon/RAW/74X_dataRun2_HLT_frozen_v1_resub_RelVal_singleMuon2015C-v1/00000/1072FBB8-4D53-E511-A496-00261894397E.root'
-             '/store/user/abaty/2010VirginRaw/HICorePhysics/VirginRAW_2010_HICorePhysics_SKIM_Cent_0_5/150615_203732/0000/VirginRAW_2010_HICorePhysics_SKIM_Cent_0_5_1.root'
-                 )
+            # '/store/user/abaty/2010VirginRaw/HICorePhysics/VirginRAW_2010_HICorePhysics_SKIM_Cent_0_5/150615_203732/0000/VirginRAW_2010_HICorePhysics_SKIM_Cent_0_5_1.root'
+            'file:/afs/cern.ch/work/k/katatar/public/PixelReadoutDQM/0CEFE112-8E63-E511-93F7-0025905A60D0.root'  
+               )
                             )
 
 process.TFileService = cms.Service("TFileService",
@@ -25,6 +26,10 @@ process.TFileService = cms.Service("TFileService",
   )
 
 #added--------------------------------
+import Geometry.HcalEventSetup.hcalTopologyIdeal_cfi
+import Geometry.HcalEventSetup.hcalTopologyConstants_cfi as hcalTopologyConstants_cfi
+hcalTopologyIdeal = Geometry.HcalEventSetup.hcalTopologyIdeal_cfi.hcalTopologyIdeal.clone()
+hcalTopologyIdeal.hcalTopologyConstants = cms.PSet(hcalTopologyConstants_cfi.hcalTopologyConstants)
 
 
 
@@ -109,15 +114,20 @@ process.siPixelQualityESProducer = cms.ESProducer( "SiPixelQualityESProducer",
 
 
 
+#HF Reco----------------
 
+process.load("RecoLocalCalo.HcalRecProducers.HcalHitReconstructor_hf_cfi")
+
+process.hcalReco = cms.Path(process.hcalDigis*process.hfreco)
 process.raw2digi_step = cms.Path(process.siPixelDigis)
 
 process.test = cms.EDAnalyzer('SiPixelAnalyzer',
                               src = cms.InputTag("siPixelDigis"),
+                              srcHFhits = cms.InputTag("hfreco"),
                               outputFile = cms.untracked.string("quickTestPixelAna.root")
                               )
 
 process.p = cms.Path(process.test)
 
-process.schedule = cms.Schedule(process.raw2digi_step,process.p)
+process.schedule = cms.Schedule(process.hcalReco,process.raw2digi_step)#,process.p)
 
