@@ -164,8 +164,8 @@ SiPixelAnalyzer::SiPixelAnalyzer(const edm::ParameterSet& iConfig)
  
      for(int i = 0; i<6; i++)
      {    
-       if(i<3) LinkOcc_[i] = new TH2D(Form("LinkOccupancy_B_L%d)",i+1),Form("Link Occupancy (Barrel Layer%d);HF Energy Sum;Average Link Occupancy",i+1),20,0,60000,20,0,5);
-       else    LinkOcc_[i] = new TH2D(Form("LinkOccupancy_EC_D%d)",i-2),Form("Link Occupancy (Endcap Disk%d);HF Energy Sum;Average Link Occupancy",i-2),20,0,60000,20,0,5);
+       if(i<3) LinkOcc_[i] = new TH2D(Form("LinkOccupancy_B_L%d",i+1),Form("Link Occupancy (Barrel Layer%d);HF Energy Sum;Average Link Occupancy",i+1),20,0,60000,20,0,5);
+       else    LinkOcc_[i] = new TH2D(Form("LinkOccupancy_EC_D%d",i-2),Form("Link Occupancy (Endcap Disk%d);HF Energy Sum;Average Link Occupancy",i-2),20,0,60000,20,0,5);
        LinkOcc_[i]->SetDirectory(oFile_->GetDirectory(0));
      }
      LinkByLinkOcc_ = new TH1D("LinkByLinkOcc",";36*detid+linkid;hits",1500,0,1500);
@@ -256,7 +256,7 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    
    for (FEDiter FI  = cabling.begin(); FI != cabling.end(); FI++) { //looping over FED
         uint32_t FEDid = (**FI).id();
-        if(FEDid!=0) continue;
+        // if(FEDid!=0) continue;
         //FED ID above
         // 
         SiPixelFrameConverter converter(theCablingMap, FEDid);
