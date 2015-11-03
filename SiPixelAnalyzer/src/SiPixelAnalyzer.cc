@@ -215,7 +215,8 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
      const HFRecHit & rechit = (*hits)[ ihit ];
      HFRecHitSum += rechit.energy();
    }
-   std::cout << HFRecHitSum << std::endl;
+   std::cout << "hits->size() = " <<hits->size() << std::endl;
+   std::cout << "HFRecHitSum  = " <<HFRecHitSum << std::endl;
 
 
    using namespace sipixelobjects;
@@ -273,9 +274,9 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
                  for ( iter = begin ; iter != end; iter++ ){  //llop over digi
                      DetectorIndex detector = {id, (*iter).row(), (*iter).column()};
                      int status   = converter.toCabling(cabling, detector);
-                     if(status==0) if (idxLink == cabling.link){ ++hitsperlink; std::cout << hitsperlink<<std::endl;}
+                     if(status==0) if (idxLink == cabling.link) ++hitsperlink;  //{ ++hitsperlink; std::cout << hitsperlink<<std::endl;}
                  }
-              std::cout << (double) (hitsperlink) << std::endl;
+//              std::cout << (double) (hitsperlink) << std::endl;
               LinkOcc_->Fill(FEDid*36+idxLink,(double)(hitsperlink));
 	    }
 	    LinksNt_->Fill(FEDid,idxLink,hitsperlink);
