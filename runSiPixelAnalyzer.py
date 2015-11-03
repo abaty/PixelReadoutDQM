@@ -16,6 +16,9 @@ process.source = cms.Source("PoolSource",
                                 fileNames = cms.untracked.vstring(
             #'/store/relval/CMSSW_7_4_10_patch2/SingleMuon/RAW/74X_dataRun2_HLT_frozen_v1_resub_RelVal_singleMuon2015C-v1/00000/1072FBB8-4D53-E511-A496-00261894397E.root'
              '/store/user/abaty/2010VirginRaw/HICorePhysics/VirginRAW_2010_HICorePhysics_SKIM_Cent_0_5/150615_203732/0000/VirginRAW_2010_HICorePhysics_SKIM_Cent_0_5_1.root'
+            #'/store/relval/CMSSW_7_4_10_patch2/SingleMuon/RAW/74X_dataRun2_HLT_frozen_v1_resub_RelVal_singleMuon2015C-v1/00000/1072FBB8-4D53-E511-A496-00261894397E.root'
+            #'/store/relval/CMSSW_7_5_3_patch1/DoubleEG/RAW/75X_dataRun2_HLT_withOfflineCustomisation_v0_newCond_RelVal_doubEG2015B-v1/00000/0CEFE112-8E63-E511-93F7-0025905A60D0.root'
+
                  )
                             )
 
@@ -34,6 +37,9 @@ process.TFileService = cms.Service("TFileService",
 process.GlobalTag = cms.ESSource( "PoolDBESSource",    
 #     globaltag = cms.string( "74X_dataRun2_HLT_frozen_v1" ),
     globaltag = cms.string( "75X_mcRun2_asymptotic_v6" ),
+    #globaltag = cms.string( "75X_mcRun2_asymptotic_v6" ),
+    #globaltag = cms.string( "75X_dataRun2_HLT_withOfflineCustomisation_v0" ),
+
 
 
     RefreshEachRun = cms.untracked.bool( True ),
