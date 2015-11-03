@@ -14,8 +14,9 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1) )
 process.source = cms.Source("PoolSource",
                                 # replace 'myfile.root' with the source file you want to use
                                 fileNames = cms.untracked.vstring(
-            '/store/relval/CMSSW_7_4_10_patch2/SingleMuon/RAW/74X_dataRun2_HLT_frozen_v1_resub_RelVal_singleMuon2015C-v1/00000/1072FBB8-4D53-E511-A496-00261894397E.root'
-                )
+            #'/store/relval/CMSSW_7_4_10_patch2/SingleMuon/RAW/74X_dataRun2_HLT_frozen_v1_resub_RelVal_singleMuon2015C-v1/00000/1072FBB8-4D53-E511-A496-00261894397E.root'
+             '/store/user/abaty/2010VirginRaw/HICorePhysics/VirginRAW_2010_HICorePhysics_SKIM_Cent_0_5/150615_203732/0000/VirginRAW_2010_HICorePhysics_SKIM_Cent_0_5_1.root'
+                 )
                             )
 
 process.TFileService = cms.Service("TFileService",

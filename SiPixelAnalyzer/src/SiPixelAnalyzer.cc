@@ -20,6 +20,7 @@
 
 // system include files
 #include <memory>
+#include <iostream>
 
 // user include files 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -112,6 +113,7 @@ class SiPixelAnalyzer : public edm::EDAnalyzer {
   TH2D* OccupancyZ_;
   TH1F * BarrelSlinkHitsDistrib_;
 
+  TH1D* LinkOcc_;
   
 };
 
@@ -152,6 +154,9 @@ SiPixelAnalyzer::SiPixelAnalyzer(const edm::ParameterSet& iConfig)
      BarrelSlinkHitsDistrib_->GetYaxis()->SetTitle("Entries");
      BarrelSlinkHitsDistrib_->GetXaxis()->SetTitle("Hits per RO Link");
      BarrelSlinkHitsDistrib_->SetDirectory(oFile_->GetDirectory(0));
+     
+     LinkOcc_ = new TH1D("LinkOcc",";36*detID+LinkID;Hits",1600,-0.5,1600.5);
+     LinkOcc_->SetDirectory(oFile_->GetDirectory(0));
  
     //Endcap Ntuples----------------------------------------------------------------------------
     EndcapModuleNt_ = new TNtuple("EndcapPixelDistrib", "EndcapPixelDistri","idH:idL:side:disk:blade:panel:module:z:R:phi:eta:HMod0Hits:HMod1Hits:ncolumns:nrows",100000);
@@ -174,6 +179,7 @@ SiPixelAnalyzer::SiPixelAnalyzer(const edm::ParameterSet& iConfig)
      OccupancyZ_->GetYaxis()->SetTitle("Occupancy [%]");
      OccupancyZ_->GetXaxis()->SetTitle("Z");
      OccupancyZ_->SetDirectory(oFile_->GetDirectory(0));
+
 }
 
 
@@ -225,11 +231,13 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    
    for (FEDiter FI  = cabling.begin(); FI != cabling.end(); FI++) { //looping over FED
         uint32_t FEDid = (**FI).id();
-       	if(FEDid != 4) continue;
-	else std::cout << "FEDid == 4!" << std::endl;
+        //
+        //FED ID above
+        // 
         SiPixelFrameConverter converter(theCablingMap, FEDid);
 
         int numberOfLinks=  (**FI).numberOfLinks();
+        std::cout << "Fed id: " << FEDid << " Number of Links: " << numberOfLinks << std::endl;
         for (int idxLink = 1; idxLink <= numberOfLinks; idxLink++) {
 	  
             const PixelFEDLink * link = (**FI).link(idxLink);
@@ -249,6 +257,7 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
                      int status   = converter.toCabling(cabling, detector);
                      if(status==0) if (idxLink == cabling.link) ++hitsperlink;
                  }
+              LinkOcc_->Fill(FEDid*36+idxLink,(double)(hitsperlink));
 	    }
 	    LinksNt_->Fill(FEDid,idxLink,hitsperlink);
 	}
@@ -259,7 +268,7 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    //-------------------------------------------------------------------------   
     //-------------------------------------------------------------------------
 
-   /*
+   
     for( DSViter = pixelDigis->begin() ; DSViter != pixelDigis->end(); DSViter++) {
           uint32_t id = DSViter->id;
           float idL = id & 0xFFFF;
@@ -434,7 +443,7 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
  
 
     }
-   */
+   
 }
 
 // ------------ method called once each job just before starting event loop  ------------
