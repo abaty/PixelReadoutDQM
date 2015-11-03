@@ -118,8 +118,8 @@ class SiPixelAnalyzer : public edm::EDAnalyzer {
   TH2D* OccupancyZ_;
   TH1F * BarrelSlinkHitsDistrib_;
 
-  TH1D* LinkOcc_;
-  
+  TH2D* LinkOcc_[6];
+  TH1D* LinkByLinkOcc_;  
 };
 
 //
@@ -161,9 +161,15 @@ SiPixelAnalyzer::SiPixelAnalyzer(const edm::ParameterSet& iConfig)
      BarrelSlinkHitsDistrib_->GetYaxis()->SetTitle("Entries");
      BarrelSlinkHitsDistrib_->GetXaxis()->SetTitle("Hits per RO Link");
      BarrelSlinkHitsDistrib_->SetDirectory(oFile_->GetDirectory(0));
-     
-     LinkOcc_ = new TH1D("LinkOcc",";36*detID+LinkID;Hits",1600,-0.5,1600.5);
-     LinkOcc_->SetDirectory(oFile_->GetDirectory(0));
+ 
+     for(int i = 0; i<6; i++)
+     {    
+       if(i<3) LinkOcc_[i] = new TH2D(Form("LinkOccupancy_B_L%d)",i+1),Form("Link Occupancy (Barrel Layer%d);HF Energy Sum;Average Link Occupancy",i+1),20,0,60000,20,0,5);
+       else    LinkOcc_[i] = new TH2D(Form("LinkOccupancy_EC_D%d)",i-2),Form("Link Occupancy (Endcap Disk%d);HF Energy Sum;Average Link Occupancy",i-2),20,0,60000,20,0,5);
+       LinkOcc_[i]->SetDirectory(oFile_->GetDirectory(0));
+     }
+     LinkByLinkOcc_ = new TH1D("LinkByLinkOcc",";36*detid+linkid;hits",1500,0,1500);
+     LinkByLinkOcc_->SetDirectory(oFile_->GetDirectory(0));
  
     //Endcap Ntuples----------------------------------------------------------------------------
     EndcapModuleNt_ = new TNtuple("EndcapPixelDistrib", "EndcapPixelDistri","idH:idL:side:disk:blade:panel:module:z:R:phi:eta:HMod0Hits:HMod1Hits:ncolumns:nrows",100000);
@@ -277,8 +283,8 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
                      if(status==0) if (idxLink == cabling.link) ++hitsperlink;  //{ ++hitsperlink; std::cout << hitsperlink<<std::endl;}
                  }
 //              std::cout << (double) (hitsperlink) << std::endl;
-              LinkOcc_->Fill(FEDid*36+idxLink,(double)(hitsperlink));
 	    }
+            LinkByLinkOcc_->Fill(FEDid*36+idxLink,(double)(hitsperlink));
 	    LinksNt_->Fill(FEDid,idxLink,hitsperlink);
 	}
    }
@@ -294,7 +300,7 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
           float idL = id & 0xFFFF;
           float idH = (id & 0xFFFF0000) >> 16;
           DetId  detId(id);
-          uint32_t SubDet = detId.subdetId();
+          //uint32_t SubDet = detId.subdetId();
           
           edm::DetSet<PixelDigi>::const_iterator  begin = DSViter->data.begin();
           edm::DetSet<PixelDigi>::const_iterator  end   = DSViter->data.end();
@@ -303,14 +309,14 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
  
           //detector Geometry-- the coordinate are of the module center
           const PixelGeomDetUnit* PixelModuleGeom = dynamic_cast<const PixelGeomDetUnit*> (trGeo_->idToDet(id));   //detector geometry -> it returns the center of the module
-          double detZ = PixelModuleGeom->surface().position().z();        //module z      
-          double detR = PixelModuleGeom->surface().position().perp();        //module R                                
-          double detEta = PixelModuleGeom->surface().position().eta();    //module eta                           
-          double detPhi = PixelModuleGeom->surface().position().phi();    //module phi 
+          //double detZ = PixelModuleGeom->surface().position().z();        //module z      
+          //double detR = PixelModuleGeom->surface().position().perp();        //module R                                
+          //double detEta = PixelModuleGeom->surface().position().eta();    //module eta                           
+          //double detPhi = PixelModuleGeom->surface().position().phi();    //module phi 
           uint32_t ncolumns = PixelModuleGeom->specificTopology().ncolumns(); //n of columns
           uint32_t nrows = PixelModuleGeom->specificTopology().nrows();       //n of rows
           
-          uint32_t nROCs = ncolumns * nrows / (80*52);                   
+          //uint32_t nROCs = ncolumns * nrows / (80*52);                   
           uint32_t nHModule = 1;
           if (nrows >80) nHModule = 2;
           
@@ -358,7 +364,7 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
                 BarrelDigisNt_->Fill(idH, idL, layer, ladder, ring,(*iter).adc(), (*iter).column(), (*iter).row());
                  
              }
-
+/*
             uint32_t ROCn=0, ROCHits =0;
             for(uint32_t j=0; j < nHModule; ++j){
                for(uint32_t i =0; i < ncolumns; ++i){
@@ -373,22 +379,25 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
                         
 	           for(uint32_t i =0; i < ncolumns/2; ++i)  BarrelDColumnsNt_->Fill(idH, idL,layer, ladder, ring,gnHModuleBarrel_+j,j*ncolumns/2 + i, rocDColumnsHits[j* ncolumns/2 +i], BarrelColumnsOffset_/2 + i + j*ncolumns/2);
                for(uint32_t i =0; i < ncolumns/2; ++i) DcolumnHits_->Fill(rocDColumnsHits[j* ncolumns/2 +i]);
-	         } 
+	         }*/ 
 
-             BarrelModuleNt_->Fill(idH, idL,layer,ladder, ring,detZ,detR, detPhi, detEta, BarrelModuleHits, HModHits[0], HModHits[1], ncolumns, nrows);
+             //BarrelModuleNt_->Fill(idH, idL,layer,ladder, ring,detZ,detR, detPhi, detEta, BarrelModuleHits, HModHits[0], HModHits[1], ncolumns, nrows);
              if(layer <3){
-	           BarrelSlinkHitsDistrib_->Fill(HModHits[0]);
-               if(nHModule > 1) BarrelSlinkHitsDistrib_->Fill(HModHits[1]);           
+	           //BarrelSlinkHitsDistrib_->Fill(HModHits[0]);
+                   if(layer==1) LinkOcc_[0]->Fill(HFRecHitSum,(double)(BarrelModuleHits / (ncolumns * nrows) * 100));
+                   else if(layer==2) LinkOcc_[1]->Fill(HFRecHitSum,(double)(BarrelModuleHits / (ncolumns * nrows) * 100));
+               //if(nHModule > 1) BarrelSlinkHitsDistrib_->Fill(HModHits[1]);           
 	         }else if (layer ==3){
-	           BarrelSlinkHitsDistrib_->Fill(BarrelModuleHits);
+	           //BarrelSlinkHitsDistrib_->Fill(BarrelModuleHits);
+                   LinkOcc_[2]->Fill(HFRecHitSum,(double)(BarrelModuleHits / (ncolumns * nrows) * 100));
              }
 
-             Occupancy_->Fill((double)(BarrelModuleHits / (ncolumns * nrows) * 100));
-             Occupancy_->Fill((double)detZ, (double)(BarrelModuleHits / (ncolumns * nrows) * 100));
+            // Occupancy_->Fill((double)(BarrelModuleHits / (ncolumns * nrows) * 100));
+            // Occupancy_->Fill((double)detZ, (double)(BarrelModuleHits / (ncolumns * nrows) * 100));
 
 
-             BarrelColumnsOffset_ += ncolumns * nHModule;  //ncolumns/Hmodule * n HModules
-             gnHModuleBarrel_+=nHModule;
+            // BarrelColumnsOffset_ += ncolumns * nHModule;  //ncolumns/Hmodule * n HModules
+            // gnHModuleBarrel_+=nHModule;
              
              delete [] rocColumnsHits;
              delete [] rocDColumnsHits;
@@ -434,7 +443,12 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
            }
            
           // EndcapModuleNt_->Fill(idH, idL, side,disk, blade,panel, mod, detZ, detR,detPhi, detEta, EndcapModuleHits,HModHits[0], HModHits[1], ncolumns, nrows);
-           EndcapModuleNt_->Fill(idH, idL, side,disk, blade,panel, mod, detZ, detR,detPhi, detEta, HModHits[0], HModHits[1], ncolumns, nrows);
+           //EndcapModuleNt_->Fill(idH, idL, side,disk, blade,panel, mod, detZ, detR,detPhi, detEta, HModHits[0], HModHits[1], ncolumns, nrows);
+           if(disk==1) LinkOcc_[3]->Fill(HFRecHitSum,(double)(EndcapModuleHits / (ncolumns * nrows) * 100));
+           else if(disk==2) LinkOcc_[4]->Fill(HFRecHitSum,(double)(EndcapModuleHits / (ncolumns * nrows) * 100));
+           else if(disk==3) LinkOcc_[5]->Fill(HFRecHitSum,(double)(EndcapModuleHits / (ncolumns * nrows) * 100));
+
+           /*
            Occupancy_->Fill((double)(EndcapModuleHits / (ncolumns * nrows) * 100));
            OccupancyZ_->Fill((double)detZ,(double)( EndcapModuleHits / (ncolumns * nrows) * 100));
 
@@ -455,7 +469,7 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 
 
              EndcapColumnsOffset_ += ncolumns * nHModule;  //ncolumns/Hmodule * n HModules
-             gnHModuleEndcap_+=nHModule;
+             gnHModuleEndcap_+=nHModule;*/
              
              delete [] rocColumnsHits;
              delete [] rocDColumnsHits;
