@@ -164,8 +164,8 @@ SiPixelAnalyzer::SiPixelAnalyzer(const edm::ParameterSet& iConfig)
  
      for(int i = 0; i<6; i++)
      {    
-       if(i<3) LinkOcc_[i] = new TH2D(Form("LinkOccupancy_B_L%d",i+1),Form("Link Occupancy (Barrel Layer%d);HF Energy Sum;Average Link Occupancy",i+1),20,0,60000,20,0,5);
-       else    LinkOcc_[i] = new TH2D(Form("LinkOccupancy_EC_D%d",i-2),Form("Link Occupancy (Endcap Disk%d);HF Energy Sum;Average Link Occupancy",i-2),20,0,60000,20,0,5);
+       if(i<3) LinkOcc_[i] = new TH2D(Form("LinkOccupancy_B_L%d",i+1),Form("Link Occupancy (Barrel Layer%d);HF Energy Sum;Average Link Occupancy",i+1),30,0,12000,100,0,0.15);
+       else    LinkOcc_[i] = new TH2D(Form("LinkOccupancy_EC_D%d",i-2),Form("Link Occupancy (Endcap Disk%d);HF Energy Sum;Average Link Occupancy",i-2),30,0,12000,100,0,0.15);
        LinkOcc_[i]->SetDirectory(oFile_->GetDirectory(0));
      }
      LinkByLinkOcc_ = new TH1D("LinkByLinkOcc",";36*detid+linkid;hits",1500,0,1500);
@@ -256,45 +256,67 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    
    for (FEDiter FI  = cabling.begin(); FI != cabling.end(); FI++) { //looping over FED
         uint32_t FEDid = (**FI).id();
-        // if(FEDid!=0) continue;
+         //if(FEDid!=0) continue;
         //FED ID above
         // 
         SiPixelFrameConverter converter(theCablingMap, FEDid);
 
         int numberOfLinks=  (**FI).numberOfLinks();
-        std::cout << "Fed id: " << FEDid << " Number of Links: " << numberOfLinks << std::endl;
-        for (int idxLink = 1; idxLink <= numberOfLinks; idxLink++) {
-	  
-            const PixelFEDLink * link = (**FI).link(idxLink);
-            int numberOfRocs = link->numberOfROCs();
-            FEDNt_->Fill(FEDid, numberOfLinks,numberOfRocs);
-            uint32_t hitsperlink =0;
+        std::cout << "\nFed id: " << FEDid << " Number of Links: " << numberOfLinks << std::endl;
+        uint32_t nhits[6] = {0};
+        uint32_t totalPix[6] = {0};
+       // for (int idxLink = 1; idxLink <= numberOfLinks; idxLink++) { //For Links
+       //     const PixelFEDLink * link = (**FI).link(idxLink);        //For Links
+       //     int numberOfRocs = link->numberOfROCs();
+       //     FEDNt_->Fill(FEDid, numberOfLinks,numberOfRocs);
             for( DSViter = pixelDigis->begin() ; DSViter != pixelDigis->end(); DSViter++) {
                  unsigned int id = DSViter->id;
                  if ( !converter.hasDetUnit(id) ) continue; //check if the module is part of the FED    
                  edm::DetSet<PixelDigi>::const_iterator  begin = DSViter->data.begin();
                  edm::DetSet<PixelDigi>::const_iterator  end   = DSViter->data.end();
                  edm::DetSet<PixelDigi>::const_iterator iter;   
-                 ElectronicIndex  cabling;
-                     
-                 for ( iter = begin ; iter != end; iter++ ){  //llop over digi
-                     DetectorIndex detector = {id, (*iter).row(), (*iter).column()};
-                     int status   = converter.toCabling(cabling, detector);
-                     if(status==0) if (idxLink == cabling.link) ++hitsperlink;  //{ ++hitsperlink; std::cout << hitsperlink<<std::endl;}
+                 ElectronicIndex  cabling; 
+                 
+                 DetId  detId(id);
+                 int detLayer = -1;
+                 if(detId.subdetId() ==PixelSubdetector::PixelBarrel ) {                //selcting barrel modules
+                   PXBDetId  bdetid(id);
+                   detLayer  = bdetid.layer()-1;   // Layer:1,2,3. -1
+                 }
+                 else{
+                   PXFDetId  fdetid(id);
+                   detLayer  = fdetid.disk()+2; //1, 2, 3 +2 for endcap
+                 }
+                 
+                 const PixelGeomDetUnit* PixelModuleGeom = dynamic_cast<const PixelGeomDetUnit*> (trGeo_->idToDet(id));   //detector geometry -> it returns the center of the module
+                 uint32_t ncolumns = PixelModuleGeom->specificTopology().ncolumns(); //n of columns
+                 uint32_t nrows = PixelModuleGeom->specificTopology().nrows();       //n of rows
+                 totalPix[detLayer] += ncolumns*nrows;
+                 for ( iter = begin ; iter != end; iter++ ){  //llop over digi    
+                   DetectorIndex detector = {id, (*iter).row(), (*iter).column()};
+                   int status   = converter.toCabling(cabling, detector);
+                   //if(status==0 && idxLink==cabling.link)  occupancy += 100.0/((double)(ncolums*nrows));  //For Links
+                   if(status==0)  nhits[detLayer] ++;  
                  }
 //              std::cout << (double) (hitsperlink) << std::endl;
-	    }
-            LinkByLinkOcc_->Fill(FEDid*36+idxLink,(double)(hitsperlink));
-	    LinksNt_->Fill(FEDid,idxLink,hitsperlink);
+	    }//For Links           
+            //LinkByLinkOcc_->Fill(FEDid*36+idxLink,(double)(hitsperlink));
+	    //LinksNt_->Fill(FEDid,idxLink,hitsperlink);
+          for(int i = 0; i<6; i++){
+            if(totalPix[i]!=0){
+              LinkOcc_[i]->Fill(HFRecHitSum,100.0*nhits[i]/((double)totalPix[i]));
+	      std::cout << "Layer: " << i << " Occupancy: " << 100.0*nhits[i]/((double)totalPix[i]) << std::endl;
+            }
+          }
 	}
-   }
+   
      
      
     //looping over the DIgis
    //-------------------------------------------------------------------------   
     //-------------------------------------------------------------------------
 
-   
+    /* 
     for( DSViter = pixelDigis->begin() ; DSViter != pixelDigis->end(); DSViter++) {
           uint32_t id = DSViter->id;
           float idL = id & 0xFFFF;
@@ -308,7 +330,7 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
           
  
           //detector Geometry-- the coordinate are of the module center
-          const PixelGeomDetUnit* PixelModuleGeom = dynamic_cast<const PixelGeomDetUnit*> (trGeo_->idToDet(id));   //detector geometry -> it returns the center of the module
+          const PixelGeomDetUnit* PixelModuleGeom = dynamic_castconst PixelGeomDetUnit*> (trGeo_->idToDet(id));   //detector geometry -> it returns the center of the module
           //double detZ = PixelModuleGeom->surface().position().z();        //module z      
           //double detR = PixelModuleGeom->surface().position().perp();        //module R                                
           //double detEta = PixelModuleGeom->surface().position().eta();    //module eta                           
@@ -361,10 +383,10 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 		        ++rocDColumnsHits[(HModule * ncolumns +(*iter).column())/2];
                 ++HModHits[HModule];  
    
-                BarrelDigisNt_->Fill(idH, idL, layer, ladder, ring,(*iter).adc(), (*iter).column(), (*iter).row());
+          //      BarrelDigisNt_->Fill(idH, idL, layer, ladder, ring,(*iter).adc(), (*iter).column(), (*iter).row());
                  
              }
-/*
+
             uint32_t ROCn=0, ROCHits =0;
             for(uint32_t j=0; j < nHModule; ++j){
                for(uint32_t i =0; i < ncolumns; ++i){
@@ -379,7 +401,7 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
                         
 	           for(uint32_t i =0; i < ncolumns/2; ++i)  BarrelDColumnsNt_->Fill(idH, idL,layer, ladder, ring,gnHModuleBarrel_+j,j*ncolumns/2 + i, rocDColumnsHits[j* ncolumns/2 +i], BarrelColumnsOffset_/2 + i + j*ncolumns/2);
                for(uint32_t i =0; i < ncolumns/2; ++i) DcolumnHits_->Fill(rocDColumnsHits[j* ncolumns/2 +i]);
-	         }*/ 
+	         }
 
              //BarrelModuleNt_->Fill(idH, idL,layer,ladder, ring,detZ,detR, detPhi, detEta, BarrelModuleHits, HModHits[0], HModHits[1], ncolumns, nrows);
              if(layer <3){
@@ -439,7 +461,7 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 	          ++rocColumnsHits[HModule * ncolumns + (*iter).column()];
 		      ++rocDColumnsHits[(HModule * ncolumns +(*iter).column())/2];
               ++HModHits[HModule]; 
-              EndcapDigisNt_->Fill(idH, idL,side, disk, blade,panel,mod,(*iter).adc(), (*iter).column(), (*iter).row());
+            //  EndcapDigisNt_->Fill(idH, idL,side, disk, blade,panel,mod,(*iter).adc(), (*iter).column(), (*iter).row());
            }
            
           // EndcapModuleNt_->Fill(idH, idL, side,disk, blade,panel, mod, detZ, detR,detPhi, detEta, EndcapModuleHits,HModHits[0], HModHits[1], ncolumns, nrows);
@@ -448,7 +470,7 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
            else if(disk==2) LinkOcc_[4]->Fill(HFRecHitSum,(double)(EndcapModuleHits / (ncolumns * nrows) * 100));
            else if(disk==3) LinkOcc_[5]->Fill(HFRecHitSum,(double)(EndcapModuleHits / (ncolumns * nrows) * 100));
 
-           /*
+           
            Occupancy_->Fill((double)(EndcapModuleHits / (ncolumns * nrows) * 100));
            OccupancyZ_->Fill((double)detZ,(double)( EndcapModuleHits / (ncolumns * nrows) * 100));
 
@@ -469,14 +491,14 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 
 
              EndcapColumnsOffset_ += ncolumns * nHModule;  //ncolumns/Hmodule * n HModules
-             gnHModuleEndcap_+=nHModule;*/
+             gnHModuleEndcap_+=nHModule;
              
              delete [] rocColumnsHits;
              delete [] rocDColumnsHits;
          }
  
 
-    }
+    }*/
    
 }
 
