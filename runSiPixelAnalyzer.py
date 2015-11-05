@@ -21,12 +21,21 @@ process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(100)
+    input = cms.untracked.int32(-1)
 )
 
 # Input source
 process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/k/katatar/public/PixelReadoutDQM/0CEFE112-8E63-E511-93F7-0025905A60D0.root'),
+    fileNames = cms.untracked.vstring(
+                                      #'file:/afs/cern.ch/work/k/katatar/public/PixelReadoutDQM/0CEFE112-8E63-E511-93F7-0025905A60D0.root'
+#                                       'file:/data/abaty/VirginRaw_CentralitySkims/VirginRAW_2010_HICorePhysics_SKIM_Cent_0_5_1.root',
+#                                       'file:/data/abaty/VirginRaw_CentralitySkims/VirginRAW_2010_HICorePhysics_SKIM_Cent_0_5_10.root',
+#                                       'file:/data/abaty/VirginRaw_CentralitySkims/VirginRAW_2010_HICorePhysics_SKIM_Cent_25_50_102.root',
+#                                       'file:/data/abaty/VirginRaw_CentralitySkims/VirginRAW_2010_HICorePhysics_SKIM_Cent_50_100_104.root'
+#                                         '/store/hidata/HIRun2010/HIAllPhysics/RAW/v1/000/152/698A4EE0EAD-D8FB-DF11-A668-003048F1C832.root'
+                                        '/store/hidata/HIRun2010/HIAllPhysics/RAW/v1/000/152/698/00EF189B-CAFB-DF11-B3E7-003048F024FE.root',
+                                        '/store/hidata/HIRun2010/HIAllPhysics/RAW/v1/000/152/698/961F4067-D9FB-DF11-8211-001D09F23A3E.root'
+                                      ),
     secondaryFileNames = cms.untracked.vstring()
 )
 
@@ -58,7 +67,7 @@ process.RECOSIMoutput = cms.OutputModule("PoolOutputModule",
 
 # Other statements
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, '75X_dataRun2_HLT_withOfflineCustomisation_v0', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run1_data', '')
 
 # Path and EndPath definitions
 process.RawToDigi_custom = cms.Sequence(#process.csctfDigis

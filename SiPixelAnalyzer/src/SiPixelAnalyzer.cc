@@ -21,6 +21,8 @@
 // system include files
 #include <memory>
 #include <iostream>
+#include <ctime>        // std::clock()
+#include <algorithm>    // std::find()
 
 // user include files 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -164,8 +166,8 @@ SiPixelAnalyzer::SiPixelAnalyzer(const edm::ParameterSet& iConfig)
  
      for(int i = 0; i<6; i++)
      {    
-       if(i<3) LinkOcc_[i] = new TH2D(Form("LinkOccupancy_B_L%d",i+1),Form("Link Occupancy (Barrel Layer%d);HF Energy Sum;Average Link Occupancy",i+1),30,0,12000,100,0,0.15);
-       else    LinkOcc_[i] = new TH2D(Form("LinkOccupancy_EC_D%d",i-2),Form("Link Occupancy (Endcap Disk%d);HF Energy Sum;Average Link Occupancy",i-2),30,0,12000,100,0,0.15);
+       if(i<3) LinkOcc_[i] = new TH2D(Form("FEDOccupancy_B_L%d",i+1),Form("FED Occupancy (Barrel Layer%d);HF Energy Sum;Average FED Occupancy",i+1),40,0,300000,100,0,3);
+       else    LinkOcc_[i] = new TH2D(Form("FEDOccupancy_EC_D%d",i-2),Form("FED Occupancy (Endcap Disk%d);HF Energy Sum;Average FED Occupancy",i-2),40,0,300000,100,0,3);
        LinkOcc_[i]->SetDirectory(oFile_->GetDirectory(0));
      }
      LinkByLinkOcc_ = new TH1D("LinkByLinkOcc",";36*detid+linkid;hits",1500,0,1500);
@@ -213,6 +215,11 @@ SiPixelAnalyzer::~SiPixelAnalyzer()
 void
 SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
+    std::clock_t    start_analyze, end_analyze;
+    std::clock_t    start_analyze1, start_analyze2;
+    start_analyze = std::clock();
+    std::cout << "started, CLOCK_REALTIME         : " << (double)CLOCK_REALTIME << std::endl;
+
    //centrality first
    double HFRecHitSum = 0;
    Handle<HFRecHitCollection> hits;
@@ -224,27 +231,26 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    std::cout << "hits->size() = " <<hits->size() << std::endl;
    std::cout << "HFRecHitSum  = " <<HFRecHitSum << std::endl;
 
-
    using namespace sipixelobjects;
 
    gnHModuleBarrel_=0;
    BarrelColumnsOffset_ =0;
    gnHModuleEndcap_=0;
-   EndcapColumnsOffset_ =0; 
+   EndcapColumnsOffset_ =0;
+
+   start_analyze1 = std::clock();
 
    edm::Handle<edm::DetSetVector<PixelDigi> > pixelDigis;
    iEvent.getByLabel(src_, pixelDigis);
 
    edm::ESHandle<SiPixelFedCablingMap> map;
    iSetup.get<SiPixelFedCablingMapRcd>().get( map );
-   const SiPixelFedCablingMap * theCablingMap = map.product();
+//   const SiPixelFedCablingMap * theCablingMap = map.product();
    std::cout <<"Map number " << map->version() << std::endl;
    
    edm::ESHandle<TrackerGeometry> tracker;
    iSetup.get<TrackerDigiGeometryRecord>().get( tracker );    
    trGeo_ = tracker.product();
-
-   
 
    //looping over FED and Links
    //-------------------------------------------------------------------------
@@ -253,63 +259,112 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    const std::vector<const PixelFEDCabling *>  cabling = CablingTree->fedList();
    typedef std::vector<const PixelFEDCabling *>::const_iterator FEDiter;
    edm::DetSetVector<PixelDigi>::const_iterator DSViter;   
-   
-   for (FEDiter FI  = cabling.begin(); FI != cabling.end(); FI++) { //looping over FED
-        uint32_t FEDid = (**FI).id();
-         //if(FEDid!=0) continue;
-        //FED ID above
-        // 
-        SiPixelFrameConverter converter(theCablingMap, FEDid);
 
-        int numberOfLinks=  (**FI).numberOfLinks();
-        std::cout << "\nFed id: " << FEDid << " Number of Links: " << numberOfLinks << std::endl;
-        uint32_t nhits[6] = {0};
-        uint32_t totalPix[6] = {0};
-       // for (int idxLink = 1; idxLink <= numberOfLinks; idxLink++) { //For Links
-       //     const PixelFEDLink * link = (**FI).link(idxLink);        //For Links
-       //     int numberOfRocs = link->numberOfROCs();
-       //     FEDNt_->Fill(FEDid, numberOfLinks,numberOfRocs);
-            for( DSViter = pixelDigis->begin() ; DSViter != pixelDigis->end(); DSViter++) {
-                 unsigned int id = DSViter->id;
-                 if ( !converter.hasDetUnit(id) ) continue; //check if the module is part of the FED    
-                 edm::DetSet<PixelDigi>::const_iterator  begin = DSViter->data.begin();
-                 edm::DetSet<PixelDigi>::const_iterator  end   = DSViter->data.end();
-                 edm::DetSet<PixelDigi>::const_iterator iter;   
-                 ElectronicIndex  cabling; 
-                 
-                 DetId  detId(id);
-                 int detLayer = -1;
-                 if(detId.subdetId() ==PixelSubdetector::PixelBarrel ) {                //selcting barrel modules
-                   PXBDetId  bdetid(id);
-                   detLayer  = bdetid.layer()-1;   // Layer:1,2,3. -1
-                 }
-                 else{
-                   PXFDetId  fdetid(id);
-                   detLayer  = fdetid.disk()+2; //1, 2, 3 +2 for endcap
-                 }
-                 
-                 const PixelGeomDetUnit* PixelModuleGeom = dynamic_cast<const PixelGeomDetUnit*> (trGeo_->idToDet(id));   //detector geometry -> it returns the center of the module
-                 uint32_t ncolumns = PixelModuleGeom->specificTopology().ncolumns(); //n of columns
-                 uint32_t nrows = PixelModuleGeom->specificTopology().nrows();       //n of rows
-                 totalPix[detLayer] += ncolumns*nrows;
-                 for ( iter = begin ; iter != end; iter++ ){  //llop over digi    
-                   DetectorIndex detector = {id, (*iter).row(), (*iter).column()};
-                   int status   = converter.toCabling(cabling, detector);
-                   //if(status==0 && idxLink==cabling.link)  occupancy += 100.0/((double)(ncolums*nrows));  //For Links
-                   if(status==0)  nhits[detLayer] ++;  
-                 }
-//              std::cout << (double) (hitsperlink) << std::endl;
-	    }//For Links           
-            //LinkByLinkOcc_->Fill(FEDid*36+idxLink,(double)(hitsperlink));
-	    //LinksNt_->Fill(FEDid,idxLink,hitsperlink);
-          for(int i = 0; i<6; i++){
-            if(totalPix[i]!=0){
-              LinkOcc_[i]->Fill(HFRecHitSum,100.0*nhits[i]/((double)totalPix[i]));
-	      std::cout << "Layer: " << i << " Occupancy: " << 100.0*nhits[i]/((double)totalPix[i]) << std::endl;
-            }
-          }
-	}
-   
+   start_analyze2 = std::clock();
+
+   int numFEDs = cabling.size();
+   std::cout << "numFEDs = " << numFEDs << std::endl;
+   int numPixelDigis_global = pixelDigis->size();
+
+   std::vector<sipixelobjects::PixelROC> pixelROCs;
+   std::vector<unsigned int> rawIDsROC;
+   std::vector<unsigned int> fedIDs;
+   for (std::vector<const PixelFEDCabling *>::const_iterator ifed=cabling.begin();
+    ifed != cabling.end(); ifed++) {
+     unsigned int fed = (**ifed).id();
+     unsigned int numLink = (**ifed).numberOfLinks();
+     for (unsigned int link=1; link <= numLink; link++) {
+       const PixelFEDLink * pLink = (**ifed).link(link);
+       if (pLink==0) continue;
+       unsigned int linkId = pLink->id();
+       if (linkId != 0 && linkId!= link)
+           std::cout << "PROBLEM WITH LINK NUMBER!!!!" << std::endl;
+       unsigned int numberROC = pLink->numberOfROCs();
+       for (unsigned int roc=1; roc <= numberROC; roc++) {
+         const PixelROC * pROC = pLink->roc(roc);
+         if (pROC==0) continue;
+         if (pROC->idInLink() != roc)
+             std::cout << "PROBLEM WITH ROC NUMBER!!!!" << std::endl;
+//         Key key = {fed, link, roc};
+//         theMap[key] = (*pROC);
+         pixelROCs.push_back(*pROC);
+         rawIDsROC.push_back(pROC->rawId());
+         fedIDs.push_back(fed);
+       }
+     }
+   }
+
+   int numRawIDsROC = rawIDsROC.size();
+   std::cout<< "numRawIDsROC = " << numRawIDsROC <<std::endl;
+   uint32_t nhits[numFEDs][6] = { {0} };
+   uint32_t totalPix[numFEDs][6] = { {0} };
+
+   for( DSViter = pixelDigis->begin() ; DSViter != pixelDigis->end(); DSViter++) {
+       unsigned int id = DSViter->id;
+       unsigned int fedID = 999999;
+
+       std::vector<unsigned int>::iterator it = std::find(rawIDsROC.begin(),rawIDsROC.end(), id);
+       if(it == rawIDsROC.end()) continue;
+       auto pos = it - rawIDsROC.begin();
+       fedID = fedIDs.at(pos);
+
+       edm::DetSet<PixelDigi>::const_iterator  begin = DSViter->data.begin();
+       edm::DetSet<PixelDigi>::const_iterator  end   = DSViter->data.end();
+       edm::DetSet<PixelDigi>::const_iterator iter;
+
+       DetId  detId(id);
+       int detLayer = -1;
+       if(detId.subdetId() ==PixelSubdetector::PixelBarrel ) {                //selcting barrel modules
+           PXBDetId  bdetid(id);
+       detLayer  = bdetid.layer()-1;   // Layer:1,2,3. -1
+       }
+       else{
+           PXFDetId  fdetid(id);
+           detLayer  = fdetid.disk()+2; //1, 2, 3 +2 for endcap
+       }
+
+       const PixelGeomDetUnit* PixelModuleGeom = dynamic_cast<const PixelGeomDetUnit*> (trGeo_->idToDet(id));   //detector geometry -> it returns the center of the module
+       uint32_t ncolumns = PixelModuleGeom->specificTopology().ncolumns(); //n of columns
+       uint32_t nrows = PixelModuleGeom->specificTopology().nrows();       //n of rows
+
+       int nhits_PixelDigi[6] = {0};
+
+       totalPix[fedID][detLayer] += ncolumns*nrows;
+       for ( iter = begin ; iter != end; iter++ ){  //llop over digi
+           GlobalPixel global = {(*iter).row(), (*iter).column()};
+
+           for(std::vector<sipixelobjects::PixelROC>::const_iterator it_pixelROCs = pixelROCs.begin(); it_pixelROCs!=pixelROCs.end(); ++it_pixelROCs){
+               PixelROC roc = *it_pixelROCs;
+               LocalPixel local = roc.toLocal(global);
+
+               if(local.valid())
+               {
+                   nhits[fedID][detLayer] ++;
+                   nhits_PixelDigi[detLayer]++;
+                   break;
+               }
+           }
+       }
+   }
+
+   for(int j=0; j<numFEDs; ++j)
+   {
+       std::cout << "Fed id: " << j << std::endl;
+       for(int i = 0; i<6; i++){
+           if(totalPix[j][i]!=0){
+               LinkOcc_[i]->Fill(HFRecHitSum,100.0*nhits[j][i]/((double)totalPix[j][i]));
+               std::cout << "Layer: " << i << " Occupancy: " << 100.0*nhits[j][i]/((double)totalPix[j][i]) << std::endl;
+           }
+       }
+   }
+   std::cout << "numPixelDigis_global       = " << numPixelDigis_global << std::endl;
+
+   end_analyze = std::clock();
+   std::cout.precision(6);      // get back to default precision
+   std::cout << "analyzer finished in             : " << (end_analyze - start_analyze) / (double)CLOCKS_PER_SEC << " seconds" << std::endl;
+   std::cout << "analyzer1 finished in            : " << (end_analyze - start_analyze1) / (double)CLOCKS_PER_SEC << " seconds" << std::endl;
+   std::cout << "analyzer2 finished in            : " << (end_analyze - start_analyze2) / (double)CLOCKS_PER_SEC << " seconds" << std::endl;
+   std::cout << "finished, CLOCK_REALTIME         : " << (double)CLOCK_REALTIME << std::endl;
      
      
     //looping over the DIgis
