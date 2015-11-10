@@ -49,6 +49,7 @@
 #include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
 #include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 #include "DataFormats/TrackerRecHit2D/interface/SiPixelRecHitCollection.h"
+#include "DataFormats/SiPixelRawData/interface/SiPixelRawDataError.h"   // for error vs. centrality plots
 
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
 
@@ -120,7 +121,12 @@ class SiPixelAnalyzer : public edm::EDAnalyzer {
   TH2D* OccupancyZ_;
   TH1F * BarrelSlinkHitsDistrib_;
 
-  TH2D* LinkOcc_[6];
+  TH2D* FEDOcc_[6];
+  TH2D* FEDErrors_[6];
+
+  TH2D* FEDOcc_10xBin[6];
+  TH2D* FEDErrors_10xBin[6];
+
   TH1D* LinkByLinkOcc_;  
 };
 
@@ -166,10 +172,55 @@ SiPixelAnalyzer::SiPixelAnalyzer(const edm::ParameterSet& iConfig)
  
      for(int i = 0; i<6; i++)
      {    
-       if(i<3) LinkOcc_[i] = new TH2D(Form("FEDOccupancy_B_L%d",i+1),Form("FED Occupancy (Barrel Layer%d);HF Energy Sum;Average FED Occupancy",i+1),40,0,300000,100,0,3);
-       else    LinkOcc_[i] = new TH2D(Form("FEDOccupancy_EC_D%d",i-2),Form("FED Occupancy (Endcap Disk%d);HF Energy Sum;Average FED Occupancy",i-2),40,0,300000,100,0,3);
-       LinkOcc_[i]->SetDirectory(oFile_->GetDirectory(0));
+       if(i<3)      FEDOcc_[i] = new TH2D(Form("FEDOccupancy_B_L%d",i+1),Form("FED Occupancy (Barrel Layer%d);HF Energy Sum;Average FED Occupancy",i+1),40,0,300000,100,0,3);
+       else if(i<5) FEDOcc_[i] = new TH2D(Form("FEDOccupancy_EC_D%d",i-2),Form("FED Occupancy (Endcap Disk%d);HF Energy Sum;Average FED Occupancy",i-2),40,0,300000,100,0,3);
+       else         FEDOcc_[i] = new TH2D(Form("FEDOccupancy_B_L123"),Form("FED Occupancy (Barrel Layers : 1, 2, 3);HF Energy Sum;Average FED Occupancy"),40,0,300000,100,0,3);
+       FEDOcc_[i]->SetDirectory(oFile_->GetDirectory(0));
      }
+
+     //     https://github.com/cms-sw/cmssw/blob/CMSSW_7_5_X/DQM/SiPixelMonitorRawData/doc/HistogramMeanings.doc#L3-L17
+     //     errorType - a number (25-38) indicating the type of error recorded.
+     //         25 indicates an invalid ROC of 25
+     //         26 indicates a gap word
+     //         27 indicates a dummy word
+     //         28 indicates a FIFO full error
+     //         29 indicates a timeout error
+     //         30 indicates a TBM error trailer
+     //         31 indicates an event number error (TBM and FED event number mismatch)
+     //         32 indicates an incorrectly formatted Slink Header
+     //         33 indicates an incorrectly formatted Slink Trailer
+     //         34 indicates the event size encoded in the Slink Trailer is different than the size found at raw to digi conversion
+     //         35 indicates an invalid FED channel number
+     //         36 indicates an invalid ROC value
+     //         37 indicates an invalid dcol or pixel value
+     //         38 indicates the pixels on a ROC weren't read out from lowest to highest row and dcol value
+     int errorBin1 = 25;
+     int errorBin2 = 38+1;
+     int numErrorBins = errorBin2-errorBin1;
+     for(int i = 0; i<6; i++)
+     {
+       if(i<3)      FEDErrors_[i] = new TH2D(Form("FEDErrors_B_L%d",i+1) ,Form("SiPixel Errors (Barrel Layer%d);HF Energy Sum;errorType",i+1),40,0,300000,    numErrorBins, errorBin1, errorBin2);
+       else if(i<5) FEDErrors_[i] = new TH2D(Form("FEDErrors_EC_D%d",i-2),Form("SiPixel Errors (Endcap Disk%d);HF Energy Sum;errorType",i-2),40,0,300000,     numErrorBins, errorBin1, errorBin2);
+       else         FEDErrors_[i] = new TH2D(Form("FEDErrors_B_L123"),    Form("SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;errorType"),40,0,300000, numErrorBins, errorBin1, errorBin2);
+       FEDErrors_[i]->SetDirectory(oFile_->GetDirectory(0));
+     }
+
+     // same histograms with 10x bins
+     for(int i = 0; i<6; i++)
+     {
+       if(i<3)      FEDOcc_10xBin[i] = new TH2D(Form("FEDOccupancy_10xBin_B_L%d",i+1),Form("FED Occupancy (Barrel Layer%d);HF Energy Sum;Average FED Occupancy",i+1),40*10,0,300000,100*10,0,3);
+       else if(i<5) FEDOcc_10xBin[i] = new TH2D(Form("FEDOccupancy_10xBin_EC_D%d",i-2),Form("FED Occupancy (Endcap Disk%d);HF Energy Sum;Average FED Occupancy",i-2),40*10,0,300000,100*10,0,3);
+       else         FEDOcc_10xBin[i] = new TH2D(Form("FEDOccupancy_10xBin_B_L123"),Form("FED Occupancy (Barrel Layers : 1, 2, 3);HF Energy Sum;Average FED Occupancy"),40*10,0,300000,100*10,0,3);
+       FEDOcc_10xBin[i]->SetDirectory(oFile_->GetDirectory(0));
+     }
+     for(int i = 0; i<6; i++)
+     {
+       if(i<3)      FEDErrors_10xBin[i] = new TH2D(Form("FEDErrors_10xBin_B_L%d",i+1) ,Form("SiPixel Errors (Barrel Layer%d);HF Energy Sum;errorType",i+1),40*10,0,300000,    numErrorBins, errorBin1, errorBin2);
+       else if(i<5) FEDErrors_10xBin[i] = new TH2D(Form("FEDErrors_10xBin_EC_D%d",i-2),Form("SiPixel Errors (Endcap Disk%d);HF Energy Sum;errorType",i-2),40*10,0,300000,     numErrorBins, errorBin1, errorBin2);
+       else         FEDErrors_10xBin[i] = new TH2D(Form("FEDErrors_10xBin_B_L123"),    Form("SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;errorType"),40*10,0,300000, numErrorBins, errorBin1, errorBin2);
+       FEDErrors_10xBin[i]->SetDirectory(oFile_->GetDirectory(0));
+     }
+
      LinkByLinkOcc_ = new TH1D("LinkByLinkOcc",";36*detid+linkid;hits",1500,0,1500);
      LinkByLinkOcc_->SetDirectory(oFile_->GetDirectory(0));
  
@@ -194,7 +245,6 @@ SiPixelAnalyzer::SiPixelAnalyzer(const edm::ParameterSet& iConfig)
      OccupancyZ_->GetYaxis()->SetTitle("Occupancy [%]");
      OccupancyZ_->GetXaxis()->SetTitle("Z");
      OccupancyZ_->SetDirectory(oFile_->GetDirectory(0));
-
 }
 
 
@@ -215,10 +265,10 @@ SiPixelAnalyzer::~SiPixelAnalyzer()
 void
 SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-    std::clock_t    start_analyze, end_analyze;
-    std::clock_t    start_analyze1, start_analyze2;
-    start_analyze = std::clock();
-    std::cout << "started, CLOCK_REALTIME         : " << (double)CLOCK_REALTIME << std::endl;
+//    std::clock_t    start_analyze, end_analyze;
+//    std::clock_t    start_analyze1, start_analyze2;
+//    start_analyze = std::clock();
+//    std::cout << "started, CLOCK_REALTIME         : " << (double)CLOCK_REALTIME << std::endl;
 
    //centrality first
    double HFRecHitSum = 0;
@@ -228,8 +278,8 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
      const HFRecHit & rechit = (*hits)[ ihit ];
      HFRecHitSum += rechit.energy();
    }
-   std::cout << "hits->size() = " <<hits->size() << std::endl;
-   std::cout << "HFRecHitSum  = " <<HFRecHitSum << std::endl;
+//   std::cout << "hits->size() = " <<hits->size() << std::endl;
+//   std::cout << "HFRecHitSum  = " <<HFRecHitSum << std::endl;
 
    using namespace sipixelobjects;
 
@@ -238,15 +288,21 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    gnHModuleEndcap_=0;
    EndcapColumnsOffset_ =0;
 
-   start_analyze1 = std::clock();
+//   start_analyze1 = std::clock();
 
    edm::Handle<edm::DetSetVector<PixelDigi> > pixelDigis;
    iEvent.getByLabel(src_, pixelDigis);
 
+   // get pixel digi errors from the event
+   // https://github.com/cms-sw/cmssw/blob/CMSSW_7_5_X/EventFilter/SiPixelRawToDigi/plugins/SiPixelRawToDigi.cc#L187
+   // https://github.com/cms-sw/cmssw/blob/CMSSW_7_5_X/EventFilter/SiPixelRawToDigi/plugins/SiPixelRawToDigi.cc#L285
+   edm::Handle<edm::DetSetVector<SiPixelRawDataError>> pixelRawDataErrors;
+   iEvent.getByLabel(src_, pixelRawDataErrors);
+
    edm::ESHandle<SiPixelFedCablingMap> map;
    iSetup.get<SiPixelFedCablingMapRcd>().get( map );
 //   const SiPixelFedCablingMap * theCablingMap = map.product();
-   std::cout <<"Map number " << map->version() << std::endl;
+//   std::cout <<"Map number " << map->version() << std::endl;
    
    edm::ESHandle<TrackerGeometry> tracker;
    iSetup.get<TrackerDigiGeometryRecord>().get( tracker );    
@@ -260,11 +316,11 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    typedef std::vector<const PixelFEDCabling *>::const_iterator FEDiter;
    edm::DetSetVector<PixelDigi>::const_iterator DSViter;   
 
-   start_analyze2 = std::clock();
+//   start_analyze2 = std::clock();
 
    int numFEDs = cabling.size();
-   std::cout << "numFEDs = " << numFEDs << std::endl;
-   int numPixelDigis_global = pixelDigis->size();
+//   std::cout << "numFEDs = " << numFEDs << std::endl;
+//   int numPixelDigis_global = pixelDigis->size();
 
    std::vector<sipixelobjects::PixelROC> pixelROCs;
    std::vector<unsigned int> rawIDsROC;
@@ -294,8 +350,8 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
      }
    }
 
-   int numRawIDsROC = rawIDsROC.size();
-   std::cout<< "numRawIDsROC = " << numRawIDsROC <<std::endl;
+//   int numRawIDsROC = rawIDsROC.size();
+//   std::cout<< "numRawIDsROC = " << numRawIDsROC <<std::endl;
    uint32_t nhits[numFEDs][6] = { {0} };
    uint32_t totalPix[numFEDs][6] = { {0} };
 
@@ -349,212 +405,66 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 
    for(int j=0; j<numFEDs; ++j)
    {
-       std::cout << "Fed id: " << j << std::endl;
+//       std::cout << "Fed id: " << j << std::endl;
        for(int i = 0; i<6; i++){
            if(totalPix[j][i]!=0){
-               LinkOcc_[i]->Fill(HFRecHitSum,100.0*nhits[j][i]/((double)totalPix[j][i]));
-               std::cout << "Layer: " << i << " Occupancy: " << 100.0*nhits[j][i]/((double)totalPix[j][i]) << std::endl;
+               FEDOcc_[i]->Fill(HFRecHitSum,100.0*nhits[j][i]/((double)totalPix[j][i]));
+               FEDOcc_10xBin[i]->Fill(HFRecHitSum,100.0*nhits[j][i]/((double)totalPix[j][i]));
+//               std::cout << "Layer: " << i << " Occupancy: " << 100.0*nhits[j][i]/((double)totalPix[j][i]) << std::endl;
+           }
+       }
+       if ((totalPix[j][0]+totalPix[j][1]+totalPix[j][2])!=0) {
+           FEDOcc_[5]->Fill(HFRecHitSum,100.0*(nhits[j][0]+nhits[j][1]+nhits[j][2])/((double)(totalPix[j][0]+totalPix[j][1]+totalPix[j][2])));
+           FEDOcc_10xBin[5]->Fill(HFRecHitSum,100.0*(nhits[j][0]+nhits[j][1]+nhits[j][2])/((double)(totalPix[j][0]+totalPix[j][1]+totalPix[j][2])));
+       }
+   }
+
+   // fill Errors vs. HFRecHitSum histogram
+//   std::cout<<"pixelDigis->size()         = "         <<pixelDigis->size()<<std::endl;
+//   std::cout<<"pixelRawDataErrors->size() = " <<pixelRawDataErrors->size()<<std::endl;
+   edm::DetSetVector<SiPixelRawDataError>::const_iterator iter_Errors;
+   for(iter_Errors = pixelRawDataErrors->begin(); iter_Errors!=pixelRawDataErrors->end(); ++iter_Errors)
+   {
+       DetId  detId(iter_Errors->id);
+       int detLayer = -1;
+       if(detId.subdetId() ==PixelSubdetector::PixelBarrel ) {                //selcting barrel modules
+           PXBDetId  bdetid(iter_Errors->id);
+           detLayer  = bdetid.layer()-1;   // Layer:1,2,3. -1
+       }
+       else if (PixelSubdetector::PixelEndcap){
+           PXFDetId  fdetid(iter_Errors->id);
+           detLayer  = fdetid.disk()+2; //1, 2, 3 +2 for endcap
+       }
+
+//       std::cout<<"iter_Errors->id          = "<<iter_Errors->id<<std::endl;
+//       std::cout<<"iter_Errors->data.size() = "<<iter_Errors->data.size()<<std::endl;
+       edm::DetSet<SiPixelRawDataError>::const_iterator di;
+       for(di = iter_Errors->data.begin(); di != iter_Errors->data.end(); di++) {
+           int FedId = di->getFedId();                  // FED the error came from
+           int errorType = di->getType();               // type of error
+
+           std::cout<<"di->errorMessage_ = "<< di->getMessage() <<std::endl;
+           std::cout<<"di->getFedId()    = "<< FedId <<std::endl;
+           std::cout<<"di->getType()     = "<< errorType <<std::endl;
+
+           FEDErrors_[detLayer]->Fill(HFRecHitSum,errorType);
+           FEDErrors_10xBin[detLayer]->Fill(HFRecHitSum,errorType);
+           if(detLayer<3)      {
+               FEDErrors_[5]->Fill(HFRecHitSum,errorType);
+               FEDErrors_10xBin[5]->Fill(HFRecHitSum,errorType);
            }
        }
    }
-   std::cout << "numPixelDigis_global       = " << numPixelDigis_global << std::endl;
 
-   end_analyze = std::clock();
+//   std::cout << "numPixelDigis_global       = " << numPixelDigis_global << std::endl;
+
+//   end_analyze = std::clock();
    std::cout.precision(6);      // get back to default precision
-   std::cout << "analyzer finished in             : " << (end_analyze - start_analyze) / (double)CLOCKS_PER_SEC << " seconds" << std::endl;
-   std::cout << "analyzer1 finished in            : " << (end_analyze - start_analyze1) / (double)CLOCKS_PER_SEC << " seconds" << std::endl;
-   std::cout << "analyzer2 finished in            : " << (end_analyze - start_analyze2) / (double)CLOCKS_PER_SEC << " seconds" << std::endl;
-   std::cout << "finished, CLOCK_REALTIME         : " << (double)CLOCK_REALTIME << std::endl;
+//   std::cout << "analyzer finished in             : " << (end_analyze - start_analyze) / (double)CLOCKS_PER_SEC << " seconds" << std::endl;
+//   std::cout << "analyzer1 finished in            : " << (end_analyze - start_analyze1) / (double)CLOCKS_PER_SEC << " seconds" << std::endl;
+//   std::cout << "analyzer2 finished in            : " << (end_analyze - start_analyze2) / (double)CLOCKS_PER_SEC << " seconds" << std::endl;
+//   std::cout << "finished, CLOCK_REALTIME         : " << (double)CLOCK_REALTIME << std::endl;
      
-     
-    //looping over the DIgis
-   //-------------------------------------------------------------------------   
-    //-------------------------------------------------------------------------
-
-    /* 
-    for( DSViter = pixelDigis->begin() ; DSViter != pixelDigis->end(); DSViter++) {
-          uint32_t id = DSViter->id;
-          float idL = id & 0xFFFF;
-          float idH = (id & 0xFFFF0000) >> 16;
-          DetId  detId(id);
-          //uint32_t SubDet = detId.subdetId();
-          
-          edm::DetSet<PixelDigi>::const_iterator  begin = DSViter->data.begin();
-          edm::DetSet<PixelDigi>::const_iterator  end   = DSViter->data.end();
-          edm::DetSet<PixelDigi>::const_iterator iter;          
-          
- 
-          //detector Geometry-- the coordinate are of the module center
-          const PixelGeomDetUnit* PixelModuleGeom = dynamic_castconst PixelGeomDetUnit*> (trGeo_->idToDet(id));   //detector geometry -> it returns the center of the module
-          //double detZ = PixelModuleGeom->surface().position().z();        //module z      
-          //double detR = PixelModuleGeom->surface().position().perp();        //module R                                
-          //double detEta = PixelModuleGeom->surface().position().eta();    //module eta                           
-          //double detPhi = PixelModuleGeom->surface().position().phi();    //module phi 
-          uint32_t ncolumns = PixelModuleGeom->specificTopology().ncolumns(); //n of columns
-          uint32_t nrows = PixelModuleGeom->specificTopology().nrows();       //n of rows
-          
-          //uint32_t nROCs = ncolumns * nrows / (80*52);                   
-          uint32_t nHModule = 1;
-          if (nrows >80) nHModule = 2;
-          
-
-
-	  //Selct the Barrel
-          //---------------------------------------------------------------------------------------------------------
-         if(detId.subdetId() ==PixelSubdetector::PixelBarrel ) {                //selcting barrel modules
-             PXBDetId  bdetid(id);
-             
-             uint32_t layer  = bdetid.layer();   // Layer:1,2,3.
-             uint32_t ladder = bdetid.ladder();  // Ladeer: 1-20, 32, 44. 
-             uint32_t ring = bdetid.module();  // Z-index: 1-8. (ring)
-       
-           
-             unsigned int BarrelModuleHits=0, HModHits[2];
-             HModHits[0] = 0;
-             HModHits[1] = 0;     
-             
-             
-             uint32_t* rocColumnsHits = new unsigned int [nHModule * ncolumns];
-             uint32_t* rocDColumnsHits = new unsigned int [nHModule *  ncolumns/2];
-           
-             
-             
-             for(uint32_t j =0; j < nHModule; ++j){
-                for (uint32_t i = 0; i< ncolumns; ++i){
-		         rocColumnsHits[j* ncolumns +i] = 0;
-		         rocDColumnsHits[(j* ncolumns + i)/2] =0;
-               }
-             }
-            
-  
-             // loop over module Digis
-             //------------------------------------------------------------------
-             for ( iter = begin ; iter != end; iter++ ){  
-                ++BarrelModuleHits;
-       
-                uint32_t HModule = 0;
-                if ((*iter).row() > 80) HModule =1;
-                ++rocColumnsHits[HModule * ncolumns + (*iter).column()];
-		        ++rocDColumnsHits[(HModule * ncolumns +(*iter).column())/2];
-                ++HModHits[HModule];  
-   
-          //      BarrelDigisNt_->Fill(idH, idL, layer, ladder, ring,(*iter).adc(), (*iter).column(), (*iter).row());
-                 
-             }
-
-            uint32_t ROCn=0, ROCHits =0;
-            for(uint32_t j=0; j < nHModule; ++j){
-               for(uint32_t i =0; i < ncolumns; ++i){
-                        ROCHits += rocColumnsHits[j* ncolumns + i];
-                        BarrelColumnsNt_->Fill(idH, idL, layer, ladder, ring,gnHModuleBarrel_+j,j*ncolumns + i, rocColumnsHits[j* ncolumns + i], BarrelColumnsOffset_ + i + j*ncolumns);
-                        if((i+1)%52 ==0){ // end of the chip 
-                            ROCOccNt_->Fill(idH, idL, ROCHits,SubDet,gnHModuleBarrel_+j,ROCn , BarrelModuleHits, nROCs );
-                            ++ROCn;
-                            ROCHits=0;
-                        }
-               }
-                        
-	           for(uint32_t i =0; i < ncolumns/2; ++i)  BarrelDColumnsNt_->Fill(idH, idL,layer, ladder, ring,gnHModuleBarrel_+j,j*ncolumns/2 + i, rocDColumnsHits[j* ncolumns/2 +i], BarrelColumnsOffset_/2 + i + j*ncolumns/2);
-               for(uint32_t i =0; i < ncolumns/2; ++i) DcolumnHits_->Fill(rocDColumnsHits[j* ncolumns/2 +i]);
-	         }
-
-             //BarrelModuleNt_->Fill(idH, idL,layer,ladder, ring,detZ,detR, detPhi, detEta, BarrelModuleHits, HModHits[0], HModHits[1], ncolumns, nrows);
-             if(layer <3){
-	           //BarrelSlinkHitsDistrib_->Fill(HModHits[0]);
-                   if(layer==1) LinkOcc_[0]->Fill(HFRecHitSum,(double)(BarrelModuleHits / (ncolumns * nrows) * 100));
-                   else if(layer==2) LinkOcc_[1]->Fill(HFRecHitSum,(double)(BarrelModuleHits / (ncolumns * nrows) * 100));
-               //if(nHModule > 1) BarrelSlinkHitsDistrib_->Fill(HModHits[1]);           
-	         }else if (layer ==3){
-	           //BarrelSlinkHitsDistrib_->Fill(BarrelModuleHits);
-                   LinkOcc_[2]->Fill(HFRecHitSum,(double)(BarrelModuleHits / (ncolumns * nrows) * 100));
-             }
-
-            // Occupancy_->Fill((double)(BarrelModuleHits / (ncolumns * nrows) * 100));
-            // Occupancy_->Fill((double)detZ, (double)(BarrelModuleHits / (ncolumns * nrows) * 100));
-
-
-            // BarrelColumnsOffset_ += ncolumns * nHModule;  //ncolumns/Hmodule * n HModules
-            // gnHModuleBarrel_+=nHModule;
-             
-             delete [] rocColumnsHits;
-             delete [] rocDColumnsHits;
-             
-         }
-
-         //Selct the Endcap
-         //---------------------------------------------------------------------------------------------------------
-         if(detId.subdetId()==PixelSubdetector::PixelEndcap ){ 
-           PXFDetId  fdetid(id);
-           uint32_t side  = fdetid.side(); //size =1 for -z, 2 for +z
-           uint32_t disk  = fdetid.disk(); //1, 2, 3
-           uint32_t blade = fdetid.blade(); //1-23
-           uint32_t panel = fdetid.panel();//panel =1,2
-           uint32_t mod   = fdetid.module();
-           
-           uint32_t EndcapModuleHits=0, HModHits[2];
-            HModHits[0] = 0;
-            HModHits[1] = 0;     
-             
-             
-             uint32_t* rocColumnsHits = new uint32_t [nHModule * ncolumns];
-             uint32_t* rocDColumnsHits = new uint32_t [nHModule *  ncolumns/2];
-             
-             for(uint32_t j =0; j < nHModule; ++j){
-	       for (uint32_t i = 0; i< ncolumns; ++i){
-		 rocColumnsHits[j* ncolumns +i] = 0;
-		 rocDColumnsHits[(j* ncolumns + i)/2] =0;
-               }
-             }
-      
-           // loop over module Digis
-           //------------------------------------------------------------------
-           for ( iter = begin ; iter != end; iter++ ){  
-	          ++EndcapModuleHits;
-                 
-              uint32_t HModule = 0;
-              if ((*iter).row() > 80) HModule =1;
-	          ++rocColumnsHits[HModule * ncolumns + (*iter).column()];
-		      ++rocDColumnsHits[(HModule * ncolumns +(*iter).column())/2];
-              ++HModHits[HModule]; 
-            //  EndcapDigisNt_->Fill(idH, idL,side, disk, blade,panel,mod,(*iter).adc(), (*iter).column(), (*iter).row());
-           }
-           
-          // EndcapModuleNt_->Fill(idH, idL, side,disk, blade,panel, mod, detZ, detR,detPhi, detEta, EndcapModuleHits,HModHits[0], HModHits[1], ncolumns, nrows);
-           //EndcapModuleNt_->Fill(idH, idL, side,disk, blade,panel, mod, detZ, detR,detPhi, detEta, HModHits[0], HModHits[1], ncolumns, nrows);
-           if(disk==1) LinkOcc_[3]->Fill(HFRecHitSum,(double)(EndcapModuleHits / (ncolumns * nrows) * 100));
-           else if(disk==2) LinkOcc_[4]->Fill(HFRecHitSum,(double)(EndcapModuleHits / (ncolumns * nrows) * 100));
-           else if(disk==3) LinkOcc_[5]->Fill(HFRecHitSum,(double)(EndcapModuleHits / (ncolumns * nrows) * 100));
-
-           
-           Occupancy_->Fill((double)(EndcapModuleHits / (ncolumns * nrows) * 100));
-           OccupancyZ_->Fill((double)detZ,(double)( EndcapModuleHits / (ncolumns * nrows) * 100));
-
-           uint32_t ROCn=0, ROCHits =0;
-           for(uint32_t j=0; j < nHModule; ++j){
-	           for(uint32_t i =0; i < ncolumns; ++i){
-                    ROCHits += rocColumnsHits[j* ncolumns + i];   
-                    EndcapColumnsNt_->Fill(idH, idL,side,disk, blade, panel,gnHModuleEndcap_+j,j*ncolumns + i, rocColumnsHits[j* ncolumns + i], EndcapColumnsOffset_ + i + j*ncolumns);
-                    if((i+1)%52 ==0){ // end of the chip 
-                            ROCOccNt_->Fill(idH, idL,ROCHits,SubDet,gnHModuleEndcap_+j,ROCn, EndcapModuleHits, nROCs);
-                            ++ROCn;
-                            ROCHits=0;
-                    }
-               }
-               for(uint32_t i =0; i < ncolumns/2; ++i)  EndcapDColumnsNt_->Fill(idH, idL,side, disk, blade, panel, gnHModuleEndcap_+j,j*ncolumns/2 + i, rocDColumnsHits[j* ncolumns/2 +i], EndcapColumnsOffset_/2 + i + j*ncolumns/2);
-               for(uint32_t i =0; i < ncolumns/2; ++i) DcolumnHits_->Fill(rocDColumnsHits[j* ncolumns/2 +i]);
-           } 
-
-
-             EndcapColumnsOffset_ += ncolumns * nHModule;  //ncolumns/Hmodule * n HModules
-             gnHModuleEndcap_+=nHModule;
-             
-             delete [] rocColumnsHits;
-             delete [] rocDColumnsHits;
-         }
- 
-
-    }*/
-   
 }
 
 // ------------ method called once each job just before starting event loop  ------------
