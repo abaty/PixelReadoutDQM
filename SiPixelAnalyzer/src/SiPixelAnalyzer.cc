@@ -123,9 +123,11 @@ class SiPixelAnalyzer : public edm::EDAnalyzer {
 
   TH2D* FEDOcc_[6];
   TH2D* FEDErrors_[6];
+  TH2D* FEDErrors_Type40[6];
 
   TH2D* FEDOcc_10xBin[6];
   TH2D* FEDErrors_10xBin[6];
+  TH2D* FEDErrors_Type40_10xBin[6];
 
   TH1D* LinkByLinkOcc_;  
 };
@@ -196,13 +198,25 @@ SiPixelAnalyzer::SiPixelAnalyzer(const edm::ParameterSet& iConfig)
      //         38 indicates the pixels on a ROC weren't read out from lowest to highest row and dcol value
      int errorBin1 = 25;
      int errorBin2 = 38+1;
+     int errorBin2_Type40 = 40+1;
      int numErrorBins = errorBin2-errorBin1;
+     int numErrorBins_Type40 = errorBin2_Type40-errorBin1;
+//     di->errorMessage_ = Error: Unknown error type
+//     di->getFedId()    = 37
+//     di->getType()     = 40
      for(int i = 0; i<6; i++)
      {
        if(i<3)      FEDErrors_[i] = new TH2D(Form("FEDErrors_B_L%d",i+1) ,Form("SiPixel Errors (Barrel Layer%d);HF Energy Sum;errorType",i+1),40,0,300000,    numErrorBins, errorBin1, errorBin2);
        else if(i<5) FEDErrors_[i] = new TH2D(Form("FEDErrors_EC_D%d",i-2),Form("SiPixel Errors (Endcap Disk%d);HF Energy Sum;errorType",i-2),40,0,300000,     numErrorBins, errorBin1, errorBin2);
        else         FEDErrors_[i] = new TH2D(Form("FEDErrors_B_L123"),    Form("SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;errorType"),40,0,300000, numErrorBins, errorBin1, errorBin2);
        FEDErrors_[i]->SetDirectory(oFile_->GetDirectory(0));
+     }
+     for(int i = 0; i<6; i++)
+     {
+       if(i<3)      FEDErrors_Type40[i] = new TH2D(Form("FEDErrors_Type40_B_L%d",i+1) ,Form("SiPixel Errors (Barrel Layer%d);HF Energy Sum;errorType",i+1),40,0,300000,    numErrorBins_Type40, errorBin1, errorBin2_Type40);
+       else if(i<5) FEDErrors_Type40[i] = new TH2D(Form("FEDErrors_Type40_EC_D%d",i-2),Form("SiPixel Errors (Endcap Disk%d);HF Energy Sum;errorType",i-2),40,0,300000,     numErrorBins_Type40, errorBin1, errorBin2_Type40);
+       else         FEDErrors_Type40[i] = new TH2D(Form("FEDErrors_Type40_B_L123"),    Form("SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;errorType"),40,0,300000, numErrorBins_Type40, errorBin1, errorBin2_Type40);
+       FEDErrors_Type40[i]->SetDirectory(oFile_->GetDirectory(0));
      }
 
      // same histograms with 10x bins
@@ -219,6 +233,13 @@ SiPixelAnalyzer::SiPixelAnalyzer(const edm::ParameterSet& iConfig)
        else if(i<5) FEDErrors_10xBin[i] = new TH2D(Form("FEDErrors_10xBin_EC_D%d",i-2),Form("SiPixel Errors (Endcap Disk%d);HF Energy Sum;errorType",i-2),40*10,0,300000,     numErrorBins, errorBin1, errorBin2);
        else         FEDErrors_10xBin[i] = new TH2D(Form("FEDErrors_10xBin_B_L123"),    Form("SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;errorType"),40*10,0,300000, numErrorBins, errorBin1, errorBin2);
        FEDErrors_10xBin[i]->SetDirectory(oFile_->GetDirectory(0));
+     }
+     for(int i = 0; i<6; i++)
+     {
+       if(i<3)      FEDErrors_Type40_10xBin[i] = new TH2D(Form("FEDErrors_Type40_10xBin_B_L%d",i+1) ,Form("SiPixel Errors (Barrel Layer%d);HF Energy Sum;errorType",i+1),40*10,0,300000,    numErrorBins_Type40, errorBin1, errorBin2_Type40);
+       else if(i<5) FEDErrors_Type40_10xBin[i] = new TH2D(Form("FEDErrors_Type40_10xBin_EC_D%d",i-2),Form("SiPixel Errors (Endcap Disk%d);HF Energy Sum;errorType",i-2),40*10,0,300000,     numErrorBins_Type40, errorBin1, errorBin2_Type40);
+       else         FEDErrors_Type40_10xBin[i] = new TH2D(Form("FEDErrors_Type40_10xBin_B_L123"),    Form("SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;errorType"),40*10,0,300000, numErrorBins_Type40, errorBin1, errorBin2_Type40);
+       FEDErrors_Type40_10xBin[i]->SetDirectory(oFile_->GetDirectory(0));
      }
 
      LinkByLinkOcc_ = new TH1D("LinkByLinkOcc",";36*detid+linkid;hits",1500,0,1500);
@@ -450,9 +471,15 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
            if (detLayer >= 0 && detLayer<=5){
                FEDErrors_[detLayer]->Fill(HFRecHitSum,errorType);
                FEDErrors_10xBin[detLayer]->Fill(HFRecHitSum,errorType);
+
+               FEDErrors_Type40[detLayer]->Fill(HFRecHitSum,errorType);
+               FEDErrors_Type40_10xBin[detLayer]->Fill(HFRecHitSum,errorType);
                if(detLayer<3)      {
                    FEDErrors_[5]->Fill(HFRecHitSum,errorType);
                    FEDErrors_10xBin[5]->Fill(HFRecHitSum,errorType);
+
+                   FEDErrors_Type40[5]->Fill(HFRecHitSum,errorType);
+                   FEDErrors_Type40_10xBin[5]->Fill(HFRecHitSum,errorType);
                }
            }
            else
