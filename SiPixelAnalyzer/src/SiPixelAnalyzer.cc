@@ -447,11 +447,17 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
            std::cout<<"di->getFedId()    = "<< FedId <<std::endl;
            std::cout<<"di->getType()     = "<< errorType <<std::endl;
 
-           FEDErrors_[detLayer]->Fill(HFRecHitSum,errorType);
-           FEDErrors_10xBin[detLayer]->Fill(HFRecHitSum,errorType);
-           if(detLayer<3)      {
-               FEDErrors_[5]->Fill(HFRecHitSum,errorType);
-               FEDErrors_10xBin[5]->Fill(HFRecHitSum,errorType);
+           if (detLayer >= 0 && detLayer<=5){
+               FEDErrors_[detLayer]->Fill(HFRecHitSum,errorType);
+               FEDErrors_10xBin[detLayer]->Fill(HFRecHitSum,errorType);
+               if(detLayer<3)      {
+                   FEDErrors_[5]->Fill(HFRecHitSum,errorType);
+                   FEDErrors_10xBin[5]->Fill(HFRecHitSum,errorType);
+               }
+           }
+           else
+           {
+               std::cout<<"error-prone detLayer = "<<detLayer<<std::endl;
            }
        }
    }
