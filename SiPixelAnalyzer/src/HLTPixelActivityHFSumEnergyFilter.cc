@@ -96,6 +96,8 @@ HLTPixelActivityHFSumEnergyFilter::fillDescriptions(edm::ConfigurationDescriptio
 bool HLTPixelActivityHFSumEnergyFilter::filter(edm::Event& event, const edm::EventSetup& iSetup) { //, trigger::TriggerFilterObjectWithRefs & filterproduct) const
   //{
 
+  Printf("running filter");
+  
   using namespace edm;
 
   // The filter object
@@ -123,6 +125,8 @@ bool HLTPixelActivityHFSumEnergyFilter::filter(edm::Event& event, const edm::Eve
 
   double thres = offset_ + slope_ * clusterSize;
   if(sumE>eMin_HF_ && sumE<thres) accept = kTRUE;
+
+  Printf("clusterSize: %d  sumE: %f thres: %f ",clusterSize,sumE,thres);
   
   // return with final filter decision
   return accept;
