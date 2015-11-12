@@ -121,13 +121,20 @@ class SiPixelAnalyzer : public edm::EDAnalyzer {
   TH2D* OccupancyZ_;
   TH1F * BarrelSlinkHitsDistrib_;
 
+  /////
   TH2D* FEDOcc_[6];
   TH2D* FEDErrors_[6];
-  TH2D* FEDErrors_Type40[6];
+  TH2D* FEDErrors_Type40_[6];
 
-  TH2D* FEDOcc_10xBin[6];
-  TH2D* FEDErrors_10xBin[6];
-  TH2D* FEDErrors_Type40_10xBin[6];
+  TH2D* FEDOcc_10xBin_[6];
+  TH2D* FEDErrors_10xBin_[6];
+  TH2D* FEDErrors_Type40_10xBin_[6];
+
+  TH1D* numErrorsPerEvent_[7];
+  TH1D* numErrorsPerEvent_10xRange_[7];
+  TH2D* numErrorsPerEvent_vs_HF_[7];
+  TH2D* numErrorsPerEvent_vs_HF_10xBin_[7];
+  /////
 
   TH1D* LinkByLinkOcc_;  
 };
@@ -172,6 +179,7 @@ SiPixelAnalyzer::SiPixelAnalyzer(const edm::ParameterSet& iConfig)
      BarrelSlinkHitsDistrib_->GetXaxis()->SetTitle("Hits per RO Link");
      BarrelSlinkHitsDistrib_->SetDirectory(oFile_->GetDirectory(0));
  
+     /////
      for(int i = 0; i<6; i++)
      {    
        if(i<3)      FEDOcc_[i] = new TH2D(Form("FEDOccupancy_B_L%d",i+1),Form("FED Occupancy (Barrel Layer%d);HF Energy Sum;Average FED Occupancy",i+1),40,0,300000,100,0,3);
@@ -213,34 +221,68 @@ SiPixelAnalyzer::SiPixelAnalyzer(const edm::ParameterSet& iConfig)
      }
      for(int i = 0; i<6; i++)
      {
-       if(i<3)      FEDErrors_Type40[i] = new TH2D(Form("FEDErrors_Type40_B_L%d",i+1) ,Form("SiPixel Errors (Barrel Layer%d);HF Energy Sum;errorType",i+1),40,0,300000,    numErrorBins_Type40, errorBin1, errorBin2_Type40);
-       else if(i<5) FEDErrors_Type40[i] = new TH2D(Form("FEDErrors_Type40_EC_D%d",i-2),Form("SiPixel Errors (Endcap Disk%d);HF Energy Sum;errorType",i-2),40,0,300000,     numErrorBins_Type40, errorBin1, errorBin2_Type40);
-       else         FEDErrors_Type40[i] = new TH2D(Form("FEDErrors_Type40_B_L123"),    Form("SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;errorType"),40,0,300000, numErrorBins_Type40, errorBin1, errorBin2_Type40);
-       FEDErrors_Type40[i]->SetDirectory(oFile_->GetDirectory(0));
+       if(i<3)      FEDErrors_Type40_[i] = new TH2D(Form("FEDErrors_Type40_B_L%d",i+1) ,Form("SiPixel Errors (Barrel Layer%d);HF Energy Sum;errorType",i+1),40,0,300000,    numErrorBins_Type40, errorBin1, errorBin2_Type40);
+       else if(i<5) FEDErrors_Type40_[i] = new TH2D(Form("FEDErrors_Type40_EC_D%d",i-2),Form("SiPixel Errors (Endcap Disk%d);HF Energy Sum;errorType",i-2),40,0,300000,     numErrorBins_Type40, errorBin1, errorBin2_Type40);
+       else         FEDErrors_Type40_[i] = new TH2D(Form("FEDErrors_Type40_B_L123"),    Form("SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;errorType"),40,0,300000, numErrorBins_Type40, errorBin1, errorBin2_Type40);
+       FEDErrors_Type40_[i]->SetDirectory(oFile_->GetDirectory(0));
      }
 
      // same histograms with 10x bins
      for(int i = 0; i<6; i++)
      {
-       if(i<3)      FEDOcc_10xBin[i] = new TH2D(Form("FEDOccupancy_10xBin_B_L%d",i+1),Form("FED Occupancy (Barrel Layer%d);HF Energy Sum;Average FED Occupancy",i+1),40*10,0,300000,100*10,0,3);
-       else if(i<5) FEDOcc_10xBin[i] = new TH2D(Form("FEDOccupancy_10xBin_EC_D%d",i-2),Form("FED Occupancy (Endcap Disk%d);HF Energy Sum;Average FED Occupancy",i-2),40*10,0,300000,100*10,0,3);
-       else         FEDOcc_10xBin[i] = new TH2D(Form("FEDOccupancy_10xBin_B_L123"),Form("FED Occupancy (Barrel Layers : 1, 2, 3);HF Energy Sum;Average FED Occupancy"),40*10,0,300000,100*10,0,3);
-       FEDOcc_10xBin[i]->SetDirectory(oFile_->GetDirectory(0));
+       if(i<3)      FEDOcc_10xBin_[i] = new TH2D(Form("FEDOccupancy_10xBin_B_L%d",i+1),Form("FED Occupancy (Barrel Layer%d);HF Energy Sum;Average FED Occupancy",i+1),40*10,0,300000,100*10,0,3);
+       else if(i<5) FEDOcc_10xBin_[i] = new TH2D(Form("FEDOccupancy_10xBin_EC_D%d",i-2),Form("FED Occupancy (Endcap Disk%d);HF Energy Sum;Average FED Occupancy",i-2),40*10,0,300000,100*10,0,3);
+       else         FEDOcc_10xBin_[i] = new TH2D(Form("FEDOccupancy_10xBin_B_L123"),Form("FED Occupancy (Barrel Layers : 1, 2, 3);HF Energy Sum;Average FED Occupancy"),40*10,0,300000,100*10,0,3);
+       FEDOcc_10xBin_[i]->SetDirectory(oFile_->GetDirectory(0));
      }
      for(int i = 0; i<6; i++)
      {
-       if(i<3)      FEDErrors_10xBin[i] = new TH2D(Form("FEDErrors_10xBin_B_L%d",i+1) ,Form("SiPixel Errors (Barrel Layer%d);HF Energy Sum;errorType",i+1),40*10,0,300000,    numErrorBins, errorBin1, errorBin2);
-       else if(i<5) FEDErrors_10xBin[i] = new TH2D(Form("FEDErrors_10xBin_EC_D%d",i-2),Form("SiPixel Errors (Endcap Disk%d);HF Energy Sum;errorType",i-2),40*10,0,300000,     numErrorBins, errorBin1, errorBin2);
-       else         FEDErrors_10xBin[i] = new TH2D(Form("FEDErrors_10xBin_B_L123"),    Form("SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;errorType"),40*10,0,300000, numErrorBins, errorBin1, errorBin2);
-       FEDErrors_10xBin[i]->SetDirectory(oFile_->GetDirectory(0));
+       if(i<3)      FEDErrors_10xBin_[i] = new TH2D(Form("FEDErrors_10xBin_B_L%d",i+1) ,Form("SiPixel Errors (Barrel Layer%d);HF Energy Sum;errorType",i+1),40*10,0,300000,    numErrorBins, errorBin1, errorBin2);
+       else if(i<5) FEDErrors_10xBin_[i] = new TH2D(Form("FEDErrors_10xBin_EC_D%d",i-2),Form("SiPixel Errors (Endcap Disk%d);HF Energy Sum;errorType",i-2),40*10,0,300000,     numErrorBins, errorBin1, errorBin2);
+       else         FEDErrors_10xBin_[i] = new TH2D(Form("FEDErrors_10xBin_B_L123"),    Form("SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;errorType"),40*10,0,300000, numErrorBins, errorBin1, errorBin2);
+       FEDErrors_10xBin_[i]->SetDirectory(oFile_->GetDirectory(0));
      }
      for(int i = 0; i<6; i++)
      {
-       if(i<3)      FEDErrors_Type40_10xBin[i] = new TH2D(Form("FEDErrors_Type40_10xBin_B_L%d",i+1) ,Form("SiPixel Errors (Barrel Layer%d);HF Energy Sum;errorType",i+1),40*10,0,300000,    numErrorBins_Type40, errorBin1, errorBin2_Type40);
-       else if(i<5) FEDErrors_Type40_10xBin[i] = new TH2D(Form("FEDErrors_Type40_10xBin_EC_D%d",i-2),Form("SiPixel Errors (Endcap Disk%d);HF Energy Sum;errorType",i-2),40*10,0,300000,     numErrorBins_Type40, errorBin1, errorBin2_Type40);
-       else         FEDErrors_Type40_10xBin[i] = new TH2D(Form("FEDErrors_Type40_10xBin_B_L123"),    Form("SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;errorType"),40*10,0,300000, numErrorBins_Type40, errorBin1, errorBin2_Type40);
-       FEDErrors_Type40_10xBin[i]->SetDirectory(oFile_->GetDirectory(0));
+       if(i<3)      FEDErrors_Type40_10xBin_[i] = new TH2D(Form("FEDErrors_Type40_10xBin_B_L%d",i+1) ,Form("SiPixel Errors (Barrel Layer%d);HF Energy Sum;errorType",i+1),40*10,0,300000,    numErrorBins_Type40, errorBin1, errorBin2_Type40);
+       else if(i<5) FEDErrors_Type40_10xBin_[i] = new TH2D(Form("FEDErrors_Type40_10xBin_EC_D%d",i-2),Form("SiPixel Errors (Endcap Disk%d);HF Energy Sum;errorType",i-2),40*10,0,300000,     numErrorBins_Type40, errorBin1, errorBin2_Type40);
+       else         FEDErrors_Type40_10xBin_[i] = new TH2D(Form("FEDErrors_Type40_10xBin_B_L123"),    Form("SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;errorType"),40*10,0,300000, numErrorBins_Type40, errorBin1, errorBin2_Type40);
+       FEDErrors_Type40_10xBin_[i]->SetDirectory(oFile_->GetDirectory(0));
      }
+
+     for(int i = 0; i<7; i++)
+     {
+       if(i<3)      numErrorsPerEvent_[i] = new TH1D(Form("numErrorsPerEvent_B_L%d",i+1) ,Form("number of SiPixel Errors (Barrel Layer%d);nSixelError",i+1), 50, 0, 50);
+       else if(i<5) numErrorsPerEvent_[i] = new TH1D(Form("numErrorsPerEvent_EC_D%d",i-2),Form("number of SiPixel Errors (Endcap Disk%d);nSixelError",i-2),  50, 0, 50);
+       else if(i<6) numErrorsPerEvent_[i] = new TH1D(Form("numErrorsPerEvent_B_L123"),    Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);nSixelError"), 50, 0, 50);
+       else         numErrorsPerEvent_[i] = new TH1D(Form("numErrorsPerEvent_"),          Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);nSixelError"), 50, 0, 50);
+       numErrorsPerEvent_[i]->SetDirectory(oFile_->GetDirectory(0));
+     }
+     for(int i = 0; i<7; i++)
+     {
+       if(i<3)      numErrorsPerEvent_10xRange_[i] = new TH1D(Form("numErrorsPerEvent_10xRange_B_L%d",i+1) ,Form("number of SiPixel Errors (Barrel Layer%d);nSixelError",i+1), 100, 0, 100);
+       else if(i<5) numErrorsPerEvent_10xRange_[i] = new TH1D(Form("numErrorsPerEvent_10xRange_EC_D%d",i-2),Form("number of SiPixel Errors (Endcap Disk%d);nSixelError",i-2),  100, 0, 100);
+       else if(i<6) numErrorsPerEvent_10xRange_[i] = new TH1D(Form("numErrorsPerEvent_10xRange_B_L123"),    Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);nSixelError"), 100, 0, 100);
+       else         numErrorsPerEvent_10xRange_[i] = new TH1D(Form("numErrorsPerEvent_10xRange_"),          Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);nSixelError"), 100, 0, 100);
+       numErrorsPerEvent_10xRange_[i]->SetDirectory(oFile_->GetDirectory(0));
+     }
+     for(int i = 0; i<7; i++)
+     {
+       if(i<3)      numErrorsPerEvent_vs_HF_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_B_L%d",i+1) ,Form("number of SiPixel Errors (Barrel Layer%d);HF Energy Sum;nSixelError",i+1),40,0,300000, 50, 0, 50);
+       else if(i<5) numErrorsPerEvent_vs_HF_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_EC_D%d",i-2),Form("number of SiPixel Errors (Endcap Disk%d);HF Energy Sum;nSixelError",i-2),40,0,300000,  50, 0, 50);
+       else if(i<6) numErrorsPerEvent_vs_HF_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_B_L123"),    Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;nSixelError"),40,0,300000, 50, 0, 50);
+       else         numErrorsPerEvent_vs_HF_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_"),          Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;nSixelError"),40,0,300000, 50, 0, 50);
+       numErrorsPerEvent_vs_HF_[i]->SetDirectory(oFile_->GetDirectory(0));
+     }
+     for(int i = 0; i<7; i++)
+     {
+       if(i<3)      numErrorsPerEvent_vs_HF_10xBin_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_10xBin_B_L%d",i+1) ,Form("number of SiPixel Errors (Barrel Layer%d);HF Energy Sum;nSixelError",i+1),40*10, 0, 300000, 50, 0, 50);
+       else if(i<5) numErrorsPerEvent_vs_HF_10xBin_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_10xBin_EC_D%d",i-2),Form("number of SiPixel Errors (Endcap Disk%d);HF Energy Sum;nSixelError", i-2), 40*10, 0, 300000, 50, 0, 50);
+       else if(i<6) numErrorsPerEvent_vs_HF_10xBin_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_10xBin_B_L123"),    Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;nSixelError"),40*10, 0, 300000, 50, 0, 50);
+       else         numErrorsPerEvent_vs_HF_10xBin_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_10xBin_"),          Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;nSixelError"),40*10, 0, 300000, 50, 0, 50);
+       numErrorsPerEvent_vs_HF_10xBin_[i]->SetDirectory(oFile_->GetDirectory(0));
+     }
+     /////
 
      LinkByLinkOcc_ = new TH1D("LinkByLinkOcc",";36*detid+linkid;hits",1500,0,1500);
      LinkByLinkOcc_->SetDirectory(oFile_->GetDirectory(0));
@@ -376,6 +418,12 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    uint32_t nhits[numFEDs][6] = { {0} };
    uint32_t totalPix[numFEDs][6] = { {0} };
 
+   // check if FED occupancy exceeds the given threshold
+   bool monsterEventCandidate = false;
+   double FEDoccupancyThresholds[5] = {1.5, 0.8, 0.3, 0.3, 0.3};
+   double FEDoccupancies[numFEDs][6] = { {0} };
+   int numErrors[7] = { 0 };
+
    for( DSViter = pixelDigis->begin() ; DSViter != pixelDigis->end(); DSViter++) {
        unsigned int id = DSViter->id;
        unsigned int fedID = 999999;
@@ -427,16 +475,34 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    for(int j=0; j<numFEDs; ++j)
    {
 //       std::cout << "Fed id: " << j << std::endl;
-       for(int i = 0; i<6; i++){
-           if(totalPix[j][i]!=0){
-               FEDOcc_[i]->Fill(HFRecHitSum,100.0*nhits[j][i]/((double)totalPix[j][i]));
-               FEDOcc_10xBin[i]->Fill(HFRecHitSum,100.0*nhits[j][i]/((double)totalPix[j][i]));
+       for(int i = 0; i<5; i++){
+           if(totalPix[j][i]!=0) {
+
+               FEDoccupancies[j][i] = 100.0*nhits[j][i]/((double)totalPix[j][i]);
+
+               if (FEDoccupancies[j][i] > FEDoccupancyThresholds[i])
+               {
+                   monsterEventCandidate = true;
+
+                   std::cout<<"monsterEventCandidate = "<< monsterEventCandidate <<std::endl;
+                   std::cout<<"fedID = j              = "<< j <<std::endl;
+                   std::cout<<"detLayer = i           = "<< i <<std::endl;
+                   std::cout<<"FEDoccupancies[j][i]     = "<< FEDoccupancies[j][i] <<std::endl;
+                   std::cout<<"nhits[j][i]              = "<< nhits[j][i] <<std::endl;
+                   std::cout<<"totalPix[j][i]           = "<< totalPix[j][i] <<std::endl;
+                   std::cout<<"HFRecHitSum              = "<< HFRecHitSum <<std::endl;
+               }
+
+               FEDOcc_[i]->Fill(HFRecHitSum, FEDoccupancies[j][i]);
+               FEDOcc_10xBin_[i]->Fill(HFRecHitSum, FEDoccupancies[j][i]);
 //               std::cout << "Layer: " << i << " Occupancy: " << 100.0*nhits[j][i]/((double)totalPix[j][i]) << std::endl;
            }
        }
        if ((totalPix[j][0]+totalPix[j][1]+totalPix[j][2])!=0) {
-           FEDOcc_[5]->Fill(HFRecHitSum,100.0*(nhits[j][0]+nhits[j][1]+nhits[j][2])/((double)(totalPix[j][0]+totalPix[j][1]+totalPix[j][2])));
-           FEDOcc_10xBin[5]->Fill(HFRecHitSum,100.0*(nhits[j][0]+nhits[j][1]+nhits[j][2])/((double)(totalPix[j][0]+totalPix[j][1]+totalPix[j][2])));
+           FEDoccupancies[j][5] = 100.0*(nhits[j][0]+nhits[j][1]+nhits[j][2])/((double)(totalPix[j][0]+totalPix[j][1]+totalPix[j][2]));
+
+           FEDOcc_[5]->Fill(HFRecHitSum, FEDoccupancies[j][5]);
+           FEDOcc_10xBin_[5]->Fill(HFRecHitSum, FEDoccupancies[j][5]);
        }
    }
 
@@ -463,29 +529,53 @@ SiPixelAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
        for(di = iter_Errors->data.begin(); di != iter_Errors->data.end(); di++) {
            int FedId = di->getFedId();                  // FED the error came from
            int errorType = di->getType();               // type of error
+           numErrors[6]++;
 
            std::cout<<"di->errorMessage_ = "<< di->getMessage() <<std::endl;
            std::cout<<"di->getFedId()    = "<< FedId <<std::endl;
            std::cout<<"di->getType()     = "<< errorType <<std::endl;
 
            if (detLayer >= 0 && detLayer<=5){
+               numErrors[detLayer]++;
+
                FEDErrors_[detLayer]->Fill(HFRecHitSum,errorType);
-               FEDErrors_10xBin[detLayer]->Fill(HFRecHitSum,errorType);
+               FEDErrors_10xBin_[detLayer]->Fill(HFRecHitSum,errorType);
 
-               FEDErrors_Type40[detLayer]->Fill(HFRecHitSum,errorType);
-               FEDErrors_Type40_10xBin[detLayer]->Fill(HFRecHitSum,errorType);
+               FEDErrors_Type40_[detLayer]->Fill(HFRecHitSum,errorType);
+               FEDErrors_Type40_10xBin_[detLayer]->Fill(HFRecHitSum,errorType);
                if(detLayer<3)      {
+                   numErrors[5]++;
                    FEDErrors_[5]->Fill(HFRecHitSum,errorType);
-                   FEDErrors_10xBin[5]->Fill(HFRecHitSum,errorType);
+                   FEDErrors_10xBin_[5]->Fill(HFRecHitSum,errorType);
 
-                   FEDErrors_Type40[5]->Fill(HFRecHitSum,errorType);
-                   FEDErrors_Type40_10xBin[5]->Fill(HFRecHitSum,errorType);
+                   FEDErrors_Type40_[5]->Fill(HFRecHitSum,errorType);
+                   FEDErrors_Type40_10xBin_[5]->Fill(HFRecHitSum,errorType);
                }
            }
            else
            {
                std::cout<<"error-prone detLayer = "<<detLayer<<std::endl;
            }
+       }
+   }
+
+   for(int i=0; i<7; ++i) {
+       numErrorsPerEvent_[i]->Fill(numErrors[i]);
+       numErrorsPerEvent_10xRange_[i]->Fill(numErrors[i]);
+
+       numErrorsPerEvent_vs_HF_[i]->Fill(HFRecHitSum,numErrors[i]);
+       numErrorsPerEvent_vs_HF_10xBin_[i]->Fill(HFRecHitSum,numErrors[i]);
+
+       if(numErrors[i]>50){
+           std::cout << "numErrors[i]>50" << std::endl;
+           std::cout<<"detLayer = i = "<< i << "  numErrors[i] = "<< numErrors[i] <<std::endl;
+       }
+   }
+   if(monsterEventCandidate) {
+       std::cout<<"monsterEventCandidate = "<< monsterEventCandidate <<std::endl;
+       for(int i=0; i<7; ++i) {
+
+           std::cout<<"detLayer = i = "<< i << "  numErrors[i] = "<< numErrors[i] <<std::endl;
        }
    }
 
