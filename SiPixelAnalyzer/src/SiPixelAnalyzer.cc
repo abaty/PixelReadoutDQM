@@ -252,34 +252,34 @@ SiPixelAnalyzer::SiPixelAnalyzer(const edm::ParameterSet& iConfig)
 
      for(int i = 0; i<7; i++)
      {
-       if(i<3)      numErrorsPerEvent_[i] = new TH1D(Form("numErrorsPerEvent_B_L%d",i+1) ,Form("number of SiPixel Errors (Barrel Layer%d);nSixelError",i+1), 50, 0, 50);
-       else if(i<5) numErrorsPerEvent_[i] = new TH1D(Form("numErrorsPerEvent_EC_D%d",i-2),Form("number of SiPixel Errors (Endcap Disk%d);nSixelError",i-2),  50, 0, 50);
-       else if(i<6) numErrorsPerEvent_[i] = new TH1D(Form("numErrorsPerEvent_B_L123"),    Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);nSixelError"), 50, 0, 50);
-       else         numErrorsPerEvent_[i] = new TH1D(Form("numErrorsPerEvent_"),          Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);nSixelError"), 50, 0, 50);
+       if(i<3)      numErrorsPerEvent_[i] = new TH1D(Form("numErrorsPerEvent_B_L%d",i+1) ,Form("number of SiPixel Errors (Barrel Layer%d);nSiPixelError",i+1), 50, 0, 50);
+       else if(i<5) numErrorsPerEvent_[i] = new TH1D(Form("numErrorsPerEvent_EC_D%d",i-2),Form("number of SiPixel Errors (Endcap Disk%d);nSiPixelError",i-2),  50, 0, 50);
+       else if(i<6) numErrorsPerEvent_[i] = new TH1D(Form("numErrorsPerEvent_B_L123"),    Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);nSiPixelError"), 50, 0, 50);
+       else         numErrorsPerEvent_[i] = new TH1D(Form("numErrorsPerEvent_"),          Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);nSiPixelError"), 50, 0, 50);
        numErrorsPerEvent_[i]->SetDirectory(oFile_->GetDirectory(0));
      }
      for(int i = 0; i<7; i++)
      {
-       if(i<3)      numErrorsPerEvent_10xRange_[i] = new TH1D(Form("numErrorsPerEvent_10xRange_B_L%d",i+1) ,Form("number of SiPixel Errors (Barrel Layer%d);nSixelError",i+1), 100, 0, 100);
-       else if(i<5) numErrorsPerEvent_10xRange_[i] = new TH1D(Form("numErrorsPerEvent_10xRange_EC_D%d",i-2),Form("number of SiPixel Errors (Endcap Disk%d);nSixelError",i-2),  100, 0, 100);
-       else if(i<6) numErrorsPerEvent_10xRange_[i] = new TH1D(Form("numErrorsPerEvent_10xRange_B_L123"),    Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);nSixelError"), 100, 0, 100);
-       else         numErrorsPerEvent_10xRange_[i] = new TH1D(Form("numErrorsPerEvent_10xRange_"),          Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);nSixelError"), 100, 0, 100);
+       if(i<3)      numErrorsPerEvent_10xRange_[i] = new TH1D(Form("numErrorsPerEvent_10xRange_B_L%d",i+1) ,Form("number of SiPixel Errors (Barrel Layer%d);nSiPixelError",i+1), 100, 0, 100);
+       else if(i<5) numErrorsPerEvent_10xRange_[i] = new TH1D(Form("numErrorsPerEvent_10xRange_EC_D%d",i-2),Form("number of SiPixel Errors (Endcap Disk%d);nSiPixelError",i-2),  100, 0, 100);
+       else if(i<6) numErrorsPerEvent_10xRange_[i] = new TH1D(Form("numErrorsPerEvent_10xRange_B_L123"),    Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);nSiPixelError"), 100, 0, 100);
+       else         numErrorsPerEvent_10xRange_[i] = new TH1D(Form("numErrorsPerEvent_10xRange_"),          Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);nSiPixelError"), 100, 0, 100);
        numErrorsPerEvent_10xRange_[i]->SetDirectory(oFile_->GetDirectory(0));
      }
      for(int i = 0; i<7; i++)
      {
-       if(i<3)      numErrorsPerEvent_vs_HF_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_B_L%d",i+1) ,Form("number of SiPixel Errors (Barrel Layer%d);HF Energy Sum;nSixelError",i+1),40,0,300000, 50, 0, 50);
-       else if(i<5) numErrorsPerEvent_vs_HF_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_EC_D%d",i-2),Form("number of SiPixel Errors (Endcap Disk%d);HF Energy Sum;nSixelError",i-2),40,0,300000,  50, 0, 50);
-       else if(i<6) numErrorsPerEvent_vs_HF_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_B_L123"),    Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;nSixelError"),40,0,300000, 50, 0, 50);
-       else         numErrorsPerEvent_vs_HF_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_"),          Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;nSixelError"),40,0,300000, 50, 0, 50);
+       if(i<3)      numErrorsPerEvent_vs_HF_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_B_L%d",i+1) ,Form("number of SiPixel Errors (Barrel Layer%d);HF Energy Sum;nSiPixelError",i+1),40,0,300000, 50, 0, 50);
+       else if(i<5) numErrorsPerEvent_vs_HF_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_EC_D%d",i-2),Form("number of SiPixel Errors (Endcap Disk%d);HF Energy Sum;nSiPixelError",i-2),40,0,300000,  50, 0, 50);
+       else if(i<6) numErrorsPerEvent_vs_HF_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_B_L123"),    Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;nSiPixelError"),40,0,300000, 50, 0, 50);
+       else         numErrorsPerEvent_vs_HF_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_"),          Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;nSiPixelError"),40,0,300000, 50, 0, 50);
        numErrorsPerEvent_vs_HF_[i]->SetDirectory(oFile_->GetDirectory(0));
      }
      for(int i = 0; i<7; i++)
      {
-       if(i<3)      numErrorsPerEvent_vs_HF_10xBin_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_10xBin_B_L%d",i+1) ,Form("number of SiPixel Errors (Barrel Layer%d);HF Energy Sum;nSixelError",i+1),40*10, 0, 300000, 50, 0, 50);
-       else if(i<5) numErrorsPerEvent_vs_HF_10xBin_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_10xBin_EC_D%d",i-2),Form("number of SiPixel Errors (Endcap Disk%d);HF Energy Sum;nSixelError", i-2), 40*10, 0, 300000, 50, 0, 50);
-       else if(i<6) numErrorsPerEvent_vs_HF_10xBin_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_10xBin_B_L123"),    Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;nSixelError"),40*10, 0, 300000, 50, 0, 50);
-       else         numErrorsPerEvent_vs_HF_10xBin_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_10xBin_"),          Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;nSixelError"),40*10, 0, 300000, 50, 0, 50);
+       if(i<3)      numErrorsPerEvent_vs_HF_10xBin_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_10xBin_B_L%d",i+1) ,Form("number of SiPixel Errors (Barrel Layer%d);HF Energy Sum;nSiPixelError",i+1),40*10, 0, 300000, 50, 0, 50);
+       else if(i<5) numErrorsPerEvent_vs_HF_10xBin_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_10xBin_EC_D%d",i-2),Form("number of SiPixel Errors (Endcap Disk%d);HF Energy Sum;nSiPixelError", i-2), 40*10, 0, 300000, 50, 0, 50);
+       else if(i<6) numErrorsPerEvent_vs_HF_10xBin_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_10xBin_B_L123"),    Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;nSiPixelError"),40*10, 0, 300000, 50, 0, 50);
+       else         numErrorsPerEvent_vs_HF_10xBin_[i] = new TH2D(Form("numErrorsPerEvent_vs_HF_10xBin_"),          Form("number of SiPixel Errors (Barrel Layers : 1, 2, 3);HF Energy Sum;nSiPixelError"),40*10, 0, 300000, 50, 0, 50);
        numErrorsPerEvent_vs_HF_10xBin_[i]->SetDirectory(oFile_->GetDirectory(0));
      }
      /////
